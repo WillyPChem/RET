@@ -1,6 +1,15 @@
+<<<<<<< HEAD
+TO DO LIST
+1. Learn how to use git
+2. Learn how to evaluate and print functions 
+3. Learn how to evaluate and print derivatives 
+4. Learn how to evaluate and print fucntion integrals 
+5. Learn how to multiply matrices 
+=======
 To Do List
 1. LEarn how to use git
 2. Learn how to evaluate and print functions
 3. Learn how to evaluate and print function derivatives
 4. Learn how to evaluate and print function integrals
 5. Learn how to multiply matrices
+>>>>>>> 6a049be5db3c59c9a14d42e627199bd63f6cd394
