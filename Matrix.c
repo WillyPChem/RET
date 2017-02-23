@@ -2,9 +2,11 @@
 #include<stdio.h>
 #include<stdlib.h>
 
+void Commutator(int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 int main() {
 
-double H[2][2], D[2][2], Pa[2][2], Pb[2][2];
+int dim = 5;
+double H[dim][dim], D[dim][dim], Pa[dim][dim], Pb[dim][dim];
 
 D[1][1] = 3;
 D[0][1] = 1;
@@ -12,9 +14,9 @@ D[0][1] = 1;
 H[1][1] = 1.0;
 H[0][0] = 1.5;
 
-for (int i=0; i<2; i++) {
+for (int i=0; i<dim; i++) {
 
-  for (int j=0; j<2; j++) {
+  for (int j=0; j<dim; j++) {
 
     double sum2 = 0;
     double sum1 = 0; 
@@ -34,3 +36,8 @@ for (int i=0; i<2; i++) {
 
 }
 
+void Commutator(int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]) {
+
+// write code here!
+
+}
