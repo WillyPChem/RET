@@ -5,7 +5,7 @@
 #include<complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
-
+void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt);
 void Commutator(int dim, double *H, double complex *D, double complex *P);
 double pi = 3.14159625;
 int main() {
@@ -50,49 +50,68 @@ for (int i=0; i<dim; i++) {
 
 }
 
-/*
-for (int i=0; i<dim; i++) {
-
-  for (int j=0; j<dim; j++) {
-
-    double sum2 = 0;
-    double sum1 = 0; 
-    for (int k=0; k<dim; k++) {
-   
-      sum2 += H[i][k]*D[k][j];
-      sum1 += D[i][k]*H[k][j];
-    }
-    Pa[i][j] = sum1;
-      printf("  Pa[%i][%i] is %f\n",i,j,sum1);
-   
-     Pb[i][j] = sum2;
-      printf(" Pb[%i][%i] is %f\n",i,j,sum2);  
- }
-   
-}
-*/
-
 }
 
+void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt) {
 
-/*void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]) {
+  int i;
+  double complex *wfn_dot, *wfn2, *wfn3, *wfn_np1, *k1, *k2, *k3;
 
-// write code here!
- for (int i=0; i<dim; i++) {
+  wfn_dot = (double complex *)malloc((dim+1)*sizeof(double complex));
+  wfn2 = (double complex *)malloc((dim+1)*sizeof(double complex));
+  wfn3 = (double complex *)malloc((dim+1)*sizeof(double complex));
+  wfn_np1 = (double complex *)malloc((dim+1)*sizeof(double complex));
+  k1 = (double complex *)malloc((dim+1)*sizeof(double complex));
+  k2 = (double complex *)malloc((dim+1)*sizeof(double complex));
+  k3 = (double complex *)malloc((dim+1)*sizeof(double complex));
 
-   for (int j=0; j<dim; j++) {
+  // Must zero out all elements of these arrays
+  for (i=0; i<=dim; i++) {
+    wfn_dot[i] = 0. + 0.*I;
+    wfn2[i] = 0. + 0.*I;
+    wfn3[i] = 0. + 0.*I;
+    wfn_np1[i] = 0. + 0.*I;
+    k1[i] = 0. + 0.*I;
+    k2[i] = 0. + 0.*I;
+    k3[i] = 0. + 0.*I;
 
-   for(int k=0; k<dim; ++k)
-			{
-      sum2 += H[i][k]*D[k][j];
-      sum1 += D[i][k]*H[k][j];
-    }
-    Pa[i][j] = sum1;
-      printf("  Pa[%i][%i] is %f\n",i,j,sum1);
+  }
 
-     Pb[i][j] = sum2;
-      printf(" Pb[%i][%i] is %f\n",i,j,sum2);
-*/      
+  // Get dPsi(n)/dt at initial time!
+  FiniteDifference_2D(dim, wfn, wfn_dot, dx);
+  // Compute approximate wfn update with Euler step
+  for (i=0; i<=dim; i++) {
+    k1[i] = dt*wfn_dot[i];
+    wfn2[i] = wfn[i] + k1[i]/2.;
+  }
+  // Get dPsi(n+k1/2)/dt
+  FiniteDifference_2D(dim, wfn2, wfn_dot, dx);
+  // Compute approximate wfn update with Euler step
+  for (i=0; i<=dim; i++) {
+    k2[i] = dt*wfn_dot[i];
+    wfn3[i] = wfn[i] + k2[i]/2.;
+  }
+  // Get dPsi(n+k2/2)/dt
+  FiniteDifference_2D(dim, wfn3, wfn_dot, dx);
+  // Compute approximate update with Euler step
+  for (i=0; i<=dim; i++) {
+    k3[i] = dt*wfn_dot[i];
+    wfn_np1[i] = wfn[i] + k1[i]/6. + 2.*k2[i]/3. + k3[i]/6.;
+    wfn[i] = wfn_np1[i];
+  }
+
+  free(wfn_dot);
+  free(wfn2);
+  free(wfn3);
+  free(wfn_np1);
+  free(k1);
+  free(k2);
+  free(k3);
+
+}
+
+
+
 
 
 void Commutator(int dim, double *H, double complex *D, double complex *P) {

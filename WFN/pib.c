@@ -93,54 +93,28 @@ void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt) {
 
   }
 
-  //printf("  Initialized wfn_dot\n");
-  //PrintVec(10, xvec, wfn_dot);
-  //printf("  Initalized wfn\n");
-  //PrintVec(10, xvec, wfn);
   // Get dPsi(n)/dt at initial time!
   FiniteDifference_2D(dim, wfn, wfn_dot, dx);
-  //printf(" Computed wfn_dot\n");
-  //PrintVec(10, xvec, wfn_dot); 
-  //printf("  Analytical \n");
-  //for (i=0; i<=10; i++) {
-  //  printf("  %12.10f  %12.10f \n",creal(wfn[i]*(-I*pi*pi/2.)),cimag(wfn[i]* (-I*pi*pi/2.)));
-  //}
   // Compute approximate wfn update with Euler step
   for (i=0; i<=dim; i++) {
     k1[i] = dt*wfn_dot[i];
     wfn2[i] = wfn[i] + k1[i]/2.;
   }
-  //printf("  Computed k1\n");
-  //PrintVec(10, xvec, k1);
-  //printf("  Computed wfn2\n");
-  //PrintVec(10, xvec, wfn2);
   // Get dPsi(n+k1/2)/dt
   FiniteDifference_2D(dim, wfn2, wfn_dot, dx);
-  //printf("  Computed wfn2_dot\n");
-  //PrintVec(10, xvec, wfn_dot);  
   // Compute approximate wfn update with Euler step
   for (i=0; i<=dim; i++) {
     k2[i] = dt*wfn_dot[i];
     wfn3[i] = wfn[i] + k2[i]/2.;
   }
-  //printf("  computed k2\n");
-  //PrintVec(10, xvec, k2);
-  //printf("  coputed wfn3\n");
-  //PrintVec(10, xvec, wfn3);
   // Get dPsi(n+k2/2)/dt
   FiniteDifference_2D(dim, wfn3, wfn_dot, dx);
-  //printf("  computed wfn3_dot\n");
-  //PrintVec(10, xvec, wfn_dot);
   // Compute approximate update with Euler step
   for (i=0; i<=dim; i++) {
     k3[i] = dt*wfn_dot[i];
     wfn_np1[i] = wfn[i] + k1[i]/6. + 2.*k2[i]/3. + k3[i]/6.; 
     wfn[i] = wfn_np1[i];
   }
- // printf(" computed wfn_np1\n");
-  //PrintVec(10, xvec, wfn_np1);
-  //printf("  copied to wfn\n");
-  //PrintVec(10, xvec, wfn);
  
   free(wfn_dot);
   free(wfn2);
