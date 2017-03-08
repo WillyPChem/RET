@@ -38,7 +38,7 @@ H[0*dim + 0] = (pi*pi/2);
 H[1*dim + 1] = 2*pi*pi;
 
 
-Commutator( dim, H, D,  P);
+Commutator( dim, H, D, P);
 
 for (int i=0; i<dim; i++) {
   for (int j=0; j<dim; j++) {
@@ -64,7 +64,7 @@ void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt) {
   k1 = (double complex *)malloc((dim+1)*sizeof(double complex));
   k2 = (double complex *)malloc((dim+1)*sizeof(double complex));
   k3 = (double complex *)malloc((dim+1)*sizeof(double complex));
-
+  
   // Must zero out all elements of these arrays
   for (i=0; i<=dim; i++) {
     wfn_dot[i] = 0. + 0.*I;
@@ -78,28 +78,27 @@ void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt) {
   }
 
   // Get dPsi(n)/dt at initial time!
-  FiniteDifference_2D(dim, wfn, wfn_dot, dx);
+  void Commutator (int dim, double complex wfn, double complex wfn_dot, double dx);
   // Compute approximate wfn update with Euler step
   for (i=0; i<=dim; i++) {
     k1[i] = dt*wfn_dot[i];
     wfn2[i] = wfn[i] + k1[i]/2.;
   }
   // Get dPsi(n+k1/2)/dt
-  FiniteDifference_2D(dim, wfn2, wfn_dot, dx);
+  void Commutator (int dim, double complex wfn2, double complex wfn_dot, double dx);
   // Compute approximate wfn update with Euler step
   for (i=0; i<=dim; i++) {
     k2[i] = dt*wfn_dot[i];
     wfn3[i] = wfn[i] + k2[i]/2.;
   }
   // Get dPsi(n+k2/2)/dt
-  FiniteDifference_2D(dim, wfn3, wfn_dot, dx);
+  void Commutator (int dim, double complex  wfn3, double complex wfn_dot, double dx);
   // Compute approximate update with Euler step
   for (i=0; i<=dim; i++) {
     k3[i] = dt*wfn_dot[i];
     wfn_np1[i] = wfn[i] + k1[i]/6. + 2.*k2[i]/3. + k3[i]/6.;
     wfn[i] = wfn_np1[i];
-  }
-
+}
   free(wfn_dot);
   free(wfn2);
   free(wfn3);
