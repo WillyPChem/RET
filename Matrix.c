@@ -13,10 +13,14 @@ int main() {
 int dim = 2.;
 double *H;
 double complex *D, *P;
+double dt = .001;
+double dx = 1.;
 
 H = (double *)malloc(dim*dim*sizeof(double));
 D = (double complex *)malloc(dim*dim*sizeof(double complex));
 P = (double complex *)malloc(dim*dim*sizeof(double complex));
+
+
 
 // Element DM(0,0) = D(0*dim+0)
 // Element DM(1,0) = D(1*dim+0)
@@ -38,66 +42,101 @@ H[0*dim + 0] = (pi*pi/2);
 H[1*dim + 1] = 2*pi*pi;
 
 
-Commutator( dim, H, D, P);
+//Commutator( dim, H, D, P);
 
 for (int i=0; i<dim; i++) {
   for (int j=0; j<dim; j++) {
 
-    printf("  %f  ",P[i*dim+j]);
+  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
+    
+  }
+  printf("\n");
+
+}
+
+RK3(dim, H, D, dx, dt);
+
+for (int i=0; i<dim; i++) {
+  for (int j=0; j<dim; j++) {
+
+  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
 
   }
-  printf(" \n ");
+  printf("\n");
 
 }
 
+
+RK3(dim, H, D, dx, dt);
+
+for (int i=0; i<dim; i++) {
+  for (int j=0; j<dim; j++) {
+
+  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
+
+  }
+  printf("\n");
+
 }
 
-void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt) {
 
-  int i;
+
+}
+
+void RK3(int dim, double *H, double complex *wfn, double dx, double dt) {
+
+  int i, j;
   double complex *wfn_dot, *wfn2, *wfn3, *wfn_np1, *k1, *k2, *k3;
-
-  wfn_dot = (double complex *)malloc((dim+1)*sizeof(double complex));
-  wfn2 = (double complex *)malloc((dim+1)*sizeof(double complex));
-  wfn3 = (double complex *)malloc((dim+1)*sizeof(double complex));
-  wfn_np1 = (double complex *)malloc((dim+1)*sizeof(double complex));
-  k1 = (double complex *)malloc((dim+1)*sizeof(double complex));
-  k2 = (double complex *)malloc((dim+1)*sizeof(double complex));
-  k3 = (double complex *)malloc((dim+1)*sizeof(double complex));
+  
+  wfn_dot = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  wfn2 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  wfn3 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  wfn_np1 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  k1 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  k2 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  k3 = (double complex *)malloc((dim*dim)*sizeof(double complex));
   
   // Must zero out all elements of these arrays
-  for (i=0; i<=dim; i++) {
-    wfn_dot[i] = 0. + 0.*I;
-    wfn2[i] = 0. + 0.*I;
-    wfn3[i] = 0. + 0.*I;
-    wfn_np1[i] = 0. + 0.*I;
-    k1[i] = 0. + 0.*I;
-    k2[i] = 0. + 0.*I;
-    k3[i] = 0. + 0.*I;
-
+  for (i=0; i<dim; i++) {
+   for (j=0; j<dim; j++) {
+    wfn_dot[i*dim+j] = 0. + 0.*I;
+    wfn2[i*dim+j] = 0. + 0.*I;
+    wfn3[i*dim+j] = 0. + 0.*I;
+    wfn_np1[i*dim+j] = 0. + 0.*I;
+    k1[i*dim+j] = 0. + 0.*I;
+    k2[i*dim+j] = 0. + 0.*I;
+    k3[i*dim+j] = 0. + 0.*I;
+    }
   }
 
   // Get dPsi(n)/dt at initial time!
-  void Commutator (int dim, double complex wfn, double complex wfn_dot, double dx);
+  Commutator (dim, H, wfn, wfn_dot);
   // Compute approximate wfn update with Euler step
-  for (i=0; i<=dim; i++) {
-    k1[i] = dt*wfn_dot[i];
-    wfn2[i] = wfn[i] + k1[i]/2.;
+  for (i=0; i<dim; i++) {
+    for (j=0; j<dim; j++) {
+    k1[i*dim+j] = dt*wfn_dot[i*dim+j];
+    wfn2[i*dim+j] = wfn[i*dim+j] + k1[i*dim+j]/2.;
+   }
+
   }
   // Get dPsi(n+k1/2)/dt
-  void Commutator (int dim, double complex wfn2, double complex wfn_dot, double dx);
+  Commutator (dim, H, wfn2, wfn_dot);
   // Compute approximate wfn update with Euler step
-  for (i=0; i<=dim; i++) {
-    k2[i] = dt*wfn_dot[i];
-    wfn3[i] = wfn[i] + k2[i]/2.;
+  for (i=0; i<dim; i++) {
+    for (j=0; j<dim; j++) {
+    k2[i*dim+j] = dt*wfn_dot[i*dim+j];
+    wfn3[i*dim+j] = wfn[i*dim+j] + k2[i*dim+j]/2.;
+  }
   }
   // Get dPsi(n+k2/2)/dt
-  void Commutator (int dim, double complex  wfn3, double complex wfn_dot, double dx);
+  Commutator (dim,H, wfn3, wfn_dot);
   // Compute approximate update with Euler step
-  for (i=0; i<=dim; i++) {
-    k3[i] = dt*wfn_dot[i];
-    wfn_np1[i] = wfn[i] + k1[i]/6. + 2.*k2[i]/3. + k3[i]/6.;
-    wfn[i] = wfn_np1[i];
+  for (i=0; i<dim; i++) {
+    for (j=0; j<dim; j++) {
+    k3[i*dim+j] = dt*wfn_dot[i*dim+j];
+    wfn_np1[i*dim+j] = wfn[i*dim+j] + k1[i*dim+j]/6. + 2.*k2[i*dim+j]/3. + k3[i*dim+j]/6.;
+    wfn[i*dim+j] = wfn_np1[i*dim+j];
+  }
 }
   free(wfn_dot);
   free(wfn2);
