@@ -7,19 +7,25 @@
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt);
 void Commutator(int dim, double *H, double complex *D, double complex *P);
+void PrintComplexMatrix(int dim, double complex *M);
+void PrintRealMatrix(int dim, double *M);
+void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM);
+
 double pi = 3.14159625;
 int main() {
 
 int dim = 2.;
 double *H;
-double complex *D, *P;
+double complex *D, *P, *C, *Ct, *Dp;
 double dt = .001;
 double dx = 1.;
 
 H = (double *)malloc(dim*dim*sizeof(double));
 D = (double complex *)malloc(dim*dim*sizeof(double complex));
 P = (double complex *)malloc(dim*dim*sizeof(double complex));
-
+Dp= (double complex *)malloc(dim*dim*sizeof(double complex));
+C = (double complex *)malloc(dim*sizeof(double complex));
+Ct= (double complex *)malloc(dim*sizeof(double complex));
 
 
 // Element DM(0,0) = D(0*dim+0)
@@ -29,59 +35,77 @@ P = (double complex *)malloc(dim*dim*sizeof(double complex));
 // form of D and D is a vector of length dim*dim
 //
 
-// Initialize Denistry matrix as a superposition state of energy eigenstate 1 and energy eigenstate 2
-// D comes from Psi = sqrt(1/2) psi_1 + sqrt(1/2) psi_2
+C[0] = sqrt(1/2.) + 0.*I;
+C[1] = sqrt(1/2.) + 0.*I;
+Ct[0] = C[0];
+Ct[1] = C[1];
+
 D[0*dim + 0] = 1/2. + 0.*I;
 D[0*dim + 1] = 1/2. + 0.*I;
 D[1*dim + 0] = 1/2. + 0.*I;
 D[1*dim + 1] = 1/2. + 0.*I;
 
-// Hamiltonian for particle in a box of length 10 Bohr radii
-H[0*dim + 0] = pi*pi/(2*100);
+H[0*dim + 0] = (pi*pi/(2*100));
 H[1*dim + 1] = 4*pi*pi/(2*100);
 
 
 //Commutator( dim, H, D, P);
+printf("  hard coded DM \n");
+PrintComplexMatrix(dim, D);
+FormDM(dim, C, Ct, Dp);
+printf("  wfn DM \n");
+PrintComplexMatrix(dim, Dp);
 
-for (int i=0; i<dim; i++) {
+
+for (int i=1; i<500; i++) {
+
+  RK3(dim, H, D, dx, dt);
+
   for (int j=0; j<dim; j++) {
 
-  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
-    
-  }
-  printf("\n");
-
-}
-
-RK3(dim, H, D, dx, dt);
-
-for (int i=0; i<dim; i++) {
-  for (int j=0; j<dim; j++) {
-
-  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
+    C[j]  = (sqrt(1/2.) + 0.*I)*cexp(-I*H[j*dim+j]*dt*i);
+    Ct[j] = (sqrt(1/2.) + 0.*I)*cexp(I*H[j*dim+j]*dt*i); 
 
   }
-  printf("\n");
+  FormDM(dim, C, Ct, Dp);
+  printf("  Updated from Commutator \n");
+  PrintComplexMatrix(dim, D);
+  printf("  Updated Analytically \n");
+  PrintComplexMatrix(dim, Dp);
 
 }
+}
 
+void PrintRealMatrix(int dim, double *M) {
 
-RK3(dim, H, D, dx, dt);
+  printf("\n");
+  for (int i=0; i<dim; i++) {
 
-for (int i=0; i<dim; i++) {
-  for (int j=0; j<dim; j++) {
+    for (int j=0; j<dim; j++) {
 
-  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
+      printf(" %f ",M[i*dim+j]);
 
+    }
+    printf("\n");
+  }
+
+  printf("\n");
+}
+
+void PrintComplexMatrix(int dim, double complex *M) {
+ 
+  printf("\n");
+  for (int i=0; i<dim; i++) {
+
+    for (int j=0; j<dim; j++) {
+
+      printf(" (%f,%f) ",creal(M[i*dim+j]),cimag(M[i*dim+j]));
+
+    }
+    printf("\n");
   }
   printf("\n");
-
 }
-
-
-
-}
-
 void RK3(int dim, double *H, double complex *wfn, double dx, double dt) {
 
   int i, j;
@@ -147,7 +171,19 @@ void RK3(int dim, double *H, double complex *wfn, double dx, double dt) {
 
 }
 
+void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM) {
 
+  for (int i=0; i<dim; i++) {
+
+    for (int j=0; j<dim; j++) {
+
+      DM[i*dim+j] = C[i]*Ct[j];
+
+    }
+
+  }
+
+}
 
 
 
