@@ -10,7 +10,7 @@ void Commutator(int dim, double *H, double complex *D, double complex *P);
 double pi = 3.14159625;
 int main() {
 
-int dim = 2.;
+int dim = 9.;
 double *H;
 double complex *D, *P;
 double dt = .001;
@@ -37,12 +37,108 @@ H[0][0] = 1.5;
 
 D[0*dim + 0] = 1/2.;
 D[1*dim + 1] = 1/2.;
+D[2*dim + 2] = 1/2.; 
+D[3*dim + 3] = 1/2.;
+D[4*dim + 4] = 1/2.;
+D[5*dim + 5] = 1/2.;
+D[6*dim + 6] = 1/2.;
+D[7*dim + 7] = 1/2.;
+D[8*dim + 8] = 1/2.;
+D[9*dim + 9] = 1/2.;
 
-H[0*dim + 0] = (pi*pi/2);
-H[1*dim + 1] = 2*pi*pi;
+H[0*dim + 0] = 0.;
+H[0*dim + 1] = 0.;
+H[0*dim + 2] = 0.;
+H[0*dim + 3] = 0.;
+H[0*dim + 4] = 0.; 
+H[0*dim + 5] = 0.;
+H[0*dim + 6] = 0.;
+H[0*dim + 7] = 0.;
+H[0*dim + 8] = 0.;
+H[0*dim + 9] = 0.;
+
+H[1*dim + 0] =  0.;
+H[1*dim + 1] =  0.0012757;
+H[1*dim + 2] = -0.0004829;
+H[1*dim + 3] =  0.0000364;
+H[1*dim + 4] = -0.0000227;
+H[1*dim + 5] =  0.0000273;
+H[1*dim + 6] = -0.0000364;
+H[1*dim + 7] = -0.0000182;
+H[1*dim + 8] =  0.;
 
 
-//Commutator( dim, H, D, P);
+H[2*dim + 0] = 0.;
+H[2*dim + 1] = -0.0004829;
+H[2*dim + 2] =  0.0019136;
+H[2*dim + 3] =  0.0001275;
+H[2*dim + 4] =  0.0000273;
+H[2*dim + 5] =  0.0000091;
+H[2*dim + 6] =  0.0000592;
+H[2*dim + 7] =  0.0000045;
+H[2*dim + 8] =  0.;
+
+H[3*dim + 0] =  0.;
+H[3*dim + 1] =  0.0000364;
+H[3*dim + 2] =  0.0001275;
+H[3*dim + 3] =  0.;
+H[3*dim + 4] = -0.0002824; 
+H[3*dim + 5] = -0.0000045;
+H[3*dim + 6] = -0.0000410;
+H[3*dim + 7] =  0.0000774;
+H[3*dim + 8] =  0.; 
+
+H[4*dim + 0] =  0.;
+H[4*dim + 1] = -0.0000227;
+H[4*dim + 2] =  0.0000273;
+H[4*dim + 3] = -0.0002824;
+H[4*dim + 4] =  0.0007973;
+H[4*dim + 5] = -0.0003189;
+H[4*dim + 6] = -0.0000865;
+H[4*dim + 7] = -0.0002597;
+H[4*dim + 8] =  0.;
+
+H[5*dim + 0] =  0.;
+H[5*dim + 1] =  0.0000273;
+H[5*dim + 2] =  0.0000091;
+H[5*dim + 3] = -0.0000045;
+H[5*dim + 4] = -0.0003189;
+H[5*dim + 5] =  0.0014580;
+H[5*dim + 6] =  0.0001822;
+H[5*dim + 7] = -0.0000091;
+H[5*dim + 8] =  0.;
+
+H[6*dim + 0] =  0.;
+H[6*dim + 1] = -0.0000364;
+H[6*dim + 2] =  0.0000592;
+H[6*dim + 3] = -0.0000410;
+H[6*dim + 4] = -0.0000865;
+H[6*dim + 5] =  0.0001822;
+H[6*dim + 6] =  0.0016402;
+H[6*dim + 7] =  0.0001458;
+H[6*dim + 8] = 0.;
+
+H[7*dim + 0] =  0.;
+H[7*dim + 1] = -0.0000182;
+H[7*dim + 2] =  0.0000045;
+H[7*dim + 3] =  0.0000774;
+H[7*dim + 4] = -0.0002597;
+H[7*dim + 5] = -0.0000091;
+H[7*dim + 6] =  0.0001458;
+H[7*dim + 7] =  0.0011846;
+H[7*dim + 8] =  0.;
+
+H[8*dim + 0] = 0.;
+H[8*dim + 1] = 0.;
+H[8*dim + 2] = 0.;
+H[8*dim + 3] = 0.;
+H[8*dim + 4] = 0.;
+H[8*dim + 5] = 0.;
+H[8*dim + 6] = 0.;
+H[8*dim + 7] = 0.;
+H[8*dim + 8] = 0.;
+
+//RK3( dim, H, D, P);
 
 for (int i=0; i<dim; i++) {
   for (int j=0; j<dim; j++) {
@@ -51,11 +147,19 @@ for (int i=0; i<dim; i++) {
     
   }
   printf("\n");
+}
+//void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt)
 
+RK3(dim, H, D, dx, dt);
+for (int i=0; i<dim; i++) {
+  for (int j=0; j<dim; j++) {
+
+  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
+}
+  printf("\n");
 }
 
 RK3(dim, H, D, dx, dt);
-
 for (int i=0; i<dim; i++) {
   for (int j=0; j<dim; j++) {
 
@@ -63,26 +167,8 @@ for (int i=0; i<dim; i++) {
 
   }
   printf("\n");
-
 }
-
-
-RK3(dim, H, D, dx, dt);
-
-for (int i=0; i<dim; i++) {
-  for (int j=0; j<dim; j++) {
-
-  printf(" (%f , %f) ",creal(D[i*dim+j]), cimag(D[i*dim+j]));
-
-  }
-  printf("\n");
-
 }
-
-
-
-}
-
 void RK3(int dim, double *H, double complex *wfn, double dx, double dt) {
 
   int i, j;
