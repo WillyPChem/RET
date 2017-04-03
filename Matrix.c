@@ -158,7 +158,11 @@ for (int i=0; i<dim; i++) {
 } */
 //void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt)
 
+<<<<<<< HEAD
 for (int j=0; j<100; j++) {
+=======
+for (int j=0; j<50000; j++) {
+>>>>>>> e0f9674fe07713962fd4ac26f806ac8a064eaecd
   
 
   RK3(dim, H, D, dx, dt);
