@@ -158,7 +158,7 @@ for (int i=0; i<dim; i++) {
 } */
 //void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt)
 
-for (int j=0; j<200; j++) {
+for (int j=0; j<100; j++) {
   
 
   RK3(dim, H, D, dx, dt);
