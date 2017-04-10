@@ -1,7 +1,7 @@
 #!/usr/bin/gnuplot
 
-set terminal postscript enhanced color 'Helvetica' 25
-set output 'Test.eps'
+set terminal png
+set output 'Test.png'
 
 set xlabel 'Time'
 set ylabel 'Population'
