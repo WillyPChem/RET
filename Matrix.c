@@ -158,15 +158,9 @@ for (int i=0; i<dim; i++) {
 } */
 //void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt)
 
-<<<<<<< HEAD
-for (int j=0; j<1000; j++) {
-=======
-<<<<<<< HEAD
-for (int j=0; j<100; j++) {
-=======
+
 for (int j=0; j<50000; j++) {
->>>>>>> e0f9674fe07713962fd4ac26f806ac8a064eaecd
->>>>>>> 2677ce037e17941717b6edb6f03221b76b7a1b62
+
   
 
   RK3(dim, H, D, dx, dt);
@@ -191,8 +185,9 @@ for (int i=0; i<dim; i++) {
   printf("\n");
 }
 */
-
 }
+
+
 void RK3(int dim, double *H, double complex *wfn, double dx, double dt) {
 
   int i, j;
