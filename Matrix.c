@@ -365,4 +365,118 @@ void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *b
 
 }
 
+// Lioville operator that controls the transfer of exciton popolution back to the ground state
+// The argument of this functions are as follows:
+// int dim -> number of states including ground state, exciton states, and sink state... full
+//            FMO model + reaction center will have dim = 9
+// int g -> the index of the ground state - in this model, it is g = 0
+// double beta -> a rate constant which describes rate of transfer from exciton states on chromophores to the ground state
+// double complex *D -> the current density matrix
+// double *bas -> the basis states for the density matrix
+// double complex *P -> The contribution to the time-derivative of the Density matrix coming from relaxation to the ground state
+void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P) {
+
+  int i, j, k;
+  double *temp_bas, *g_bas;
+  double complex *temp_t1, *temp_t2, *LD;
+  temp_bas = (double *)malloc(dim*dim*sizeof(double));
+  g_bas    = (double *)malloc(dim*dim*sizeof(double));
+  temp_t1  = (double complex *)malloc(dim*dim*sizeof(double complex));
+  temp_t2  = (double complex *)malloc(dim*dim*sizeof(double complex));
+  LD       = (double complex *)malloc(dim*dim*sizeof(double complex));
+
+  // Form |g><g| matrix
+  for (i=0; i<dim; i++) {
+    for (j=0; j<dim; j++) {
+      g_bas[i*dim+j] = bas[g*dim+i]*bas[j*dim+g];
+      LD[i*dim+j] = 0. + 0.*I;
+    }
+  }
+
+
+  for (k=1; k<dim-1; k++) {
+
+    for (i=0; i<dim; i++) {
+
+      for (j=0; j<dim; j++) {
+
+        temp_bas[i*dim+j] = bas[k*dim+i]*bas[j*dim+k];
+        temp_t1[i*dim+j] = 2*D[k*dim+k]*g_bas[i*dim+j];
+      }
+    }
+    AntiCommutator(dim, temp_bas, D, temp_t2);
+    for (i=0; i<dim; i++) {
+      for (j=0; j<dim; j++) {
+        LD[i*dim+j] += beta*temp_t1[i*dim+j] - beta*temp_t2[i*dim+j];
+      }
+    }
+ }
+ for (i=0; i<dim; i++) {
+   for (j=0; j<dim; j++) {
+     P[i*dim+j] = LD[i*dim+j];
+   }
+ }
+
+
+ free(temp_bas);
+ free(g_bas);
+ free(temp_t1);
+ free(temp_t2);
+ free(LD);
+}
+
+// Lioville operator that models "dephasing"
+// The argument of this functions are as follows:
+// int dim -> number of states including ground state, exciton states, and sink state... full
+//            FMO model + reaction center will have dim = 9
+// double alpha -> The dephasing rate
+// double complex *D -> the current density matrix
+// double *bas -> the basis states for the density matrix
+// double complex *P -> The contribution to the time-derivative of the Density matrix coming from dephasing
+void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P) {
+
+  int i, j, k;
+  double *temp_bas;
+  double complex *temp_t1, *temp_t2, *LD;
+  temp_bas = (double *)malloc(dim*dim*sizeof(double));
+  temp_t1  = (double complex *)malloc(dim*dim*sizeof(double complex));
+  temp_t2  = (double complex *)malloc(dim*dim*sizeof(double complex));
+  LD       = (double complex *)malloc(dim*dim*sizeof(double complex));
+
+  for (i=0; i<dim; i++) {
+    for (j=0; j<dim; j++) {
+      LD[i*dim+j] = 0. + 0.*I;
+    }
+  }
+
+  for (k=1; k<dim-1; k++) {
+
+    for (i=0; i<dim; i++) {
+
+      for (j=0; j<dim; j++) {
+
+        temp_bas[i*dim+j] = bas[k*dim+i]*bas[j*dim+k];
+        temp_t1[i*dim+j] = 2*D[k*dim+k]*temp_bas[i*dim+j];
+      }
+    }
+    AntiCommutator(dim, temp_bas, D, temp_t2);
+    for (i=0; i<dim; i++) {
+      for (j=0; j<dim; j++) {
+        LD[i*dim+j] += alpha*temp_t1[i*dim+j] - alpha*temp_t2[i*dim+j];
+      }
+    }
+ }
+
+ for (i=0; i<dim; i++) {
+   for (j=0; j<dim; j++) {
+     P[i*dim+j] = LD[i*dim+j];
+   }
+ }
+ 
+ free(temp_bas);
+ free(temp_t1);
+ free(temp_t2);
+ free(LD);
+
+}
 
