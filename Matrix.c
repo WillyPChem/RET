@@ -7,6 +7,10 @@
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt);
 void Commutator(int dim, double *H, double complex *D, double complex *P);
+void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
+void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P);
+void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
+void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);
 double pi = 3.14159625;
 int main() {
 
@@ -278,5 +282,87 @@ for (int i=0; i<dim; i++) {
 }
 }
 
+// Function that takes the anticommutator of H and D -> i.e. {H,D} = HD + DH
+// In this case, H is taken to be a real matrix and D is taken to be a complex matrix
+// The result of the commutator will be a complex matrix
+void AntiCommutator(int dim, double *H, double complex *D, double complex *P) {
+
+  for (int i=0; i<dim; i++) {
+
+    for (int j=0; j<dim; j++) {
+
+      double complex sum2 = 0+0*I;
+      double complex sum1 = 0+0*I;
+      for (int k=0; k<dim; k++) {
+
+        sum1 += H[i*dim+k]*D[k*dim+j];
+        sum2 += D[i*dim+k]*H[k*dim+j];
+    
+      }
+    
+      P[i*dim+j] = sum1 + sum2;
+  
+    }
+  }
+}
+
+// Lioville operator that controls the transfer of exciton popolution to the reaction center.
+// The argument of this functions are as follows:
+// int dim -> number of states including ground state, exciton states, and sink state... full
+//            FMO model + reaction center will have dim = 9
+// int chan -> the index of the exciton state the couples directly to the reaction center, aka, the channel.  In the FMO model
+//             described in J Chem Phys Lett, chromophore 3 couples to the reaction center, so 
+//             so chan=3 in that case 
+// int s    -> the index of the state the corresponds to the reaction center (aka sink)... in the FMO model
+//             described in the J Chem Phys Lett, the sink has index = 8
+// double gamma -> a rate constant which describes rate of transfer from the chan chromophore to the sink state
+// double complex *D -> the current density matrix
+// double *bas -> the basis states for the density matrix
+// double complex *P -> The contribution to the time-derivative of the Density matrix coming from coupling to the sink
+void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P) {
+
+  int i, j, k;
+  double *chan_bas, *s_bas;
+  double complex *temp_t1, *temp_t2, *LD;
+  chan_bas = (double *)malloc(dim*dim*sizeof(double));
+  s_bas    = (double *)malloc(dim*dim*sizeof(double));
+  temp_t1  = (double complex *)malloc(dim*dim*sizeof(double complex));
+  temp_t2  = (double complex *)malloc(dim*dim*sizeof(double complex));
+  LD       = (double complex *)malloc(dim*dim*sizeof(double complex));
+
+
+
+  // Form |chan><chang| and |s><s| matrices
+  for (i=0; i<dim; i++) {
+    for (j=0; j<dim; j++) {
+      chan_bas[i*dim+j] = bas[chan*dim+i]*bas[j*dim+chan];
+      s_bas[i*dim+j] = bas[s*dim+i]*bas[j*dim+s];
+    }
+  }
+
+
+
+  for (i=0; i<dim; i++) {
+
+    for (j=0; j<dim; j++) {
+
+      temp_t1[i*dim+j] = 2*D[chan*dim+chan]*s_bas[i*dim+j];
+    }
+  }
+  AntiCommutator(dim, chan_bas, D, temp_t2);
+
+  for (i=0; i<dim; i++) {
+    for (j=0; j<dim; j++) {
+      P[i*dim+j] = gamma*temp_t1[i*dim+j] - gamma*temp_t2[i*dim+j];
+    }
+  }
+
+ free(chan_bas);
+ free(s_bas);
+ free(temp_t1);
+ free(temp_t2);
+ free(LD);
+
+}
 
 
