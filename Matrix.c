@@ -12,6 +12,10 @@ void L_Deph(int dim, double alpha, double complex *D, double *bas, double comple
 void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
 void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);
 double pi = 3.14159625;
+// NOTE!!!  You need three global variables for the rates associated with 
+// The Lindblad operators - gamma, beta, and alpha should be defined here according
+// to their values in the journal of physical chemistry letters paper
+
 int main() {
 
 int dim = 9.;
@@ -191,66 +195,93 @@ for (int i=0; i<dim; i++) {
 */
 }
 
-
-void RK3(int dim, double *H, double complex *wfn, double dx, double dt) {
+// Function that Solves the Liouville equation to update the densisty matrix D from D(t) to D(t+dt)
+// Using 3rd Order Runge-Kutta (RK3)... Must compute the time-derivative of D(t) and two different
+// partially updated D(ts) [D(t + k1/2) and D(t+k2/2)]
+void RK3(int dim, double *H, double complex *D, double dx, double dt) {
 
   int i, j;
-  double complex *wfn_dot, *wfn2, *wfn3, *wfn_np1, *k1, *k2, *k3;
+  double complex *D_dot, *D2, *D3, *D_np1, *k1, *k2, *k3;
+  // NOTE!!!!  Need to declare three additional complex double arrays that will store the three contributions 
+  // to Ddot (time derivative of the Density matrix) that arise from the Lindblad operator (L_Diss, L_Deph, and L_Sink)
+  // Declare those arrays here!
   
-  wfn_dot = (double complex *)malloc((dim*dim)*sizeof(double complex));
-  wfn2 = (double complex *)malloc((dim*dim)*sizeof(double complex));
-  wfn3 = (double complex *)malloc((dim*dim)*sizeof(double complex));
-  wfn_np1 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  // Time-derivative of Density Matrix from Commutator
+  D_dot = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  // Partially updated Density Matrix from first RK step
+  D2 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  // Partially updated Density Matrix from second RK step
+  D3 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  // Temporary Array for fully updated Density Matrix
+  D_np1 = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  // Three "stride" arrays for the RK3 updates
   k1 = (double complex *)malloc((dim*dim)*sizeof(double complex));
   k2 = (double complex *)malloc((dim*dim)*sizeof(double complex));
   k3 = (double complex *)malloc((dim*dim)*sizeof(double complex));
   
+  // NOTE!!! Need to allocate Meomry for the three arrays associated with the Lindblad operators
+  // Allocate Memory here!
+  
   // Must zero out all elements of these arrays
   for (i=0; i<dim; i++) {
    for (j=0; j<dim; j++) {
-    wfn_dot[i*dim+j] = 0. + 0.*I;
-    wfn2[i*dim+j] = 0. + 0.*I;
-    wfn3[i*dim+j] = 0. + 0.*I;
-    wfn_np1[i*dim+j] = 0. + 0.*I;
+    D_dot[i*dim+j] = 0. + 0.*I;
+    D2[i*dim+j] = 0. + 0.*I;
+    D3[i*dim+j] = 0. + 0.*I;
+    D_np1[i*dim+j] = 0. + 0.*I;
     k1[i*dim+j] = 0. + 0.*I;
     k2[i*dim+j] = 0. + 0.*I;
     k3[i*dim+j] = 0. + 0.*I;
     }
   }
 
-  // Get dPsi(n)/dt at initial time!
-  Commutator (dim, H, wfn, wfn_dot);
+  // Get d/dt of D(t) 
+  Commutator (dim, H, D, D_dot);
+  // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
+  // Call the three Lindblad Functions with the appropriate arguments here!!!
   // Compute approximate wfn update with Euler step
   for (i=0; i<dim; i++) {
     for (j=0; j<dim; j++) {
-    k1[i*dim+j] = dt*wfn_dot[i*dim+j];
-    wfn2[i*dim+j] = wfn[i*dim+j] + k1[i*dim+j]/2.;
+    // NOTE!!! Partial update needs to include contributions from Lindblad terms!
+    // rewrite the right hand side of the "k1[i*dim+j] =" line so that these terms are included 
+    k1[i*dim+j] = dt*D_dot[i*dim+j];
+    D2[i*dim+j] = D[i*dim+j] + k1[i*dim+j]/2.;
    }
 
   }
-  // Get dPsi(n+k1/2)/dt
-  Commutator (dim, H, wfn2, wfn_dot);
+  // Get d/dt of partially-updated D(t)+k1/2
+  Commutator (dim, H, D2, D_dot);
+  // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
+  // Call the three Lindblad Functions with the appropriate arguments here!!!
   // Compute approximate wfn update with Euler step
   for (i=0; i<dim; i++) {
     for (j=0; j<dim; j++) {
-    k2[i*dim+j] = dt*wfn_dot[i*dim+j];
-    wfn3[i*dim+j] = wfn[i*dim+j] + k2[i*dim+j]/2.;
+    // NOTE!!! Partial update needs to include contributions from Lindblad terms!
+    // rewrite the right hand side of the "k2[i*dim+j] =" line so that these terms are included 
+    k2[i*dim+j] = dt*D_dot[i*dim+j];
+    D3[i*dim+j] = D[i*dim+j] + k2[i*dim+j]/2.;
   }
   }
-  // Get dPsi(n+k2/2)/dt
-  Commutator (dim,H, wfn3, wfn_dot);
+  // Get d/dt of partially-updated D(t)+k2/2
+  Commutator (dim,H, D3, D_dot);
+  // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
+  // Call the three Lindblad Functions with the appropriate arguments here!!!
   // Compute approximate update with Euler step
   for (i=0; i<dim; i++) {
     for (j=0; j<dim; j++) {
-    k3[i*dim+j] = dt*wfn_dot[i*dim+j];
-    wfn_np1[i*dim+j] = wfn[i*dim+j] + k1[i*dim+j]/6. + 2.*k2[i*dim+j]/3. + k3[i*dim+j]/6.;
-    wfn[i*dim+j] = wfn_np1[i*dim+j];
+    // NOTE!!! Partial update needs to include contributions from Lindblad terms!
+    // rewrite the right hand side of the "k3[i*dim+j] =" line so that these terms are included 
+    k3[i*dim+j] = dt*D_dot[i*dim+j];
+    // Complete RK3 update of D(t) -> D(t+dt)
+    D_np1[i*dim+j] = D[i*dim+j] + k1[i*dim+j]/6. + 2.*k2[i*dim+j]/3. + k3[i*dim+j]/6.;
+    D[i*dim+j] = D_np1[i*dim+j];
   }
 }
-  free(wfn_dot);
-  free(wfn2);
-  free(wfn3);
-  free(wfn_np1);
+  // Free Memory for all temporary arrays!
+  free(D_dot);
+  free(D2);
+  free(D3);
+  free(D_np1);
   free(k1);
   free(k2);
   free(k3);
