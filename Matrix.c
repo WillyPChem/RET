@@ -5,7 +5,7 @@
 #include<complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
-void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt);
+void RK3(int dim, double *xvec, double complex *D, double dx, double dt);
 void Commutator(int dim, double *H, double complex *D, double complex *P);
 void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
 void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P);
@@ -278,6 +278,7 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
   }
 }
   // Free Memory for all temporary arrays!
+  // NOTE!!! You need to free memory for the new arrays you created for the Lindblad operator
   free(D_dot);
   free(D2);
   free(D3);
