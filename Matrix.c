@@ -5,15 +5,15 @@
 #include<complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
-void RK3(int dim, double *xvec, double complex *D, double dx, double dt);
+void RK3(int dim, double *bas, double *xvec, double complex *D, double dx, double dt);
 void Commutator(int dim, double *H, double complex *D, double complex *P);
 void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
 void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P);
 void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
 void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);
-double gamma = 1.21e-8;
-double beta = 7.26e-5;
-double alpha = 1.52e-4;
+double gam = 1.21e-8;
+double bet = 7.26e-5;
+double alph = 1.52e-4;
 double pi = 3.14159625;
 
 // NOTE!!!  You need three global variables for the rates associated with 
@@ -34,12 +34,15 @@ double dx = 1.;
 H = (double *)malloc(dim*dim*sizeof(double));
 D = (double complex *)malloc(dim*dim*sizeof(double complex));
 P = (double complex *)malloc(dim*dim*sizeof(double complex));
+bas = (double *)malloc(dim*dim*sizeof(double));
 
+for (int i=0; i<dim; i++) {
+  for (int j=0; j<dim; j++) {
+    if (i==j) bas[i*dim+i] = 1.;
+    else bas[i*dim+j] = 0.;
+  }
+}
 
-
-int(dim, double alpha, double complex *D, double *bas, double complex *P);
-void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
-void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);// Element DM(0,0) = D(0*dim+0)
 // Element DM(1,0) = D(1*dim+0)
 // D comes from Psi = sqrt(1/2) psi_1 + sqrt(1/2) psi_2
 // Element DM(0,1) = D(0*dim+1)
@@ -180,7 +183,7 @@ for (int j=0; j<500000; j++) {
 
   
 
-  RK3(dim, H, D, dx, dt);
+  RK3(dim, bas, H, D, dx, dt);
   printf(" %f ",j*dt);
   for (int i=0; i<dim; i++) {
   //for (int j=0; j<dim; j++) {
@@ -207,10 +210,10 @@ for (int i=0; i<dim; i++) {
 // Function that Solves the Liouville equation to update the densisty matrix D from D(t) to D(t+dt)
 // Using 3rd Order Runge-Kutta (RK3)... Must compute the time-derivative of D(t) and two different
 // partially updated D(ts) [D(t + k1/2) and D(t+k2/2)]
-void RK3(int dim, double *H, double complex *D, double dx, double dt) {
+void RK3(int dim, double *bas, double *H, double complex *D, double dx, double dt) {
 
   int i, j;
-  double complex *D_dot, *D2, *D3, *D_np1, *k1, *k2, *k3, *L_Diss, *L_Deph, *L_Sink;
+  double complex *D_dot, *D2, *D3, *D_np1, *k1, *k2, *k3, *LDiss, *LDeph, *LSink;
   // NOTE!!!!  Need to declare three additional complex double arrays that will store the three contributions 
   // to Ddot (time derivative of the Density matrix) that arise from the Lindblad operator (L_Diss, L_Deph, and L_Sink)
   // Declare those arrays here!
@@ -230,9 +233,9 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
   
   // NOTE!!! Need to allocate Meomry for the three arrays associated with the Lindblad operators
   // Allocate Memory here!
-  L_Diss = (double complex *)malloc((dim*dim)*sizeof(double complex));
-  L_Deph = (double complex *)malloc((dim*dim)*sizeof(double complex));
-  L_Sink = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  LDiss = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  LDeph = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  LSink = (double complex *)malloc((dim*dim)*sizeof(double complex));
   // Must zero out all elements of these arrays
   for (i=0; i<dim; i++) {
    for (j=0; j<dim; j++) {
@@ -243,16 +246,16 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
     k1[i*dim+j] = 0. + 0.*I;
     k2[i*dim+j] = 0. + 0.*I;
     k3[i*dim+j] = 0. + 0.*I;
-    L_Diss[i*dim+j] = 0. + 0.*I;
-    L_Deph[i*dim+j] = 0. + 0.*I;
-    L_Sink[i*dim+j] = 0. + 0.*I;
+    LDiss[i*dim+j] = 0. + 0.*I;
+    LDeph[i*dim+j] = 0. + 0.*I;
+    LSink[i*dim+j] = 0. + 0.*I;
   }
   }
 
   // Get d/dt of D(t)
-   L_Deph(dim, alpha, *D, *bas, *P);
-   L_Diss(dim, g, beta, *D, *bas, *P);
-   L_Sink(dim, chan, s, gamma, *D, *bas, *P);
+   L_Deph(dim, alph, D, bas, LDeph);
+   L_Diss(dim, g, bet, D, bas, LDiss);
+   L_Sink(dim, chan, s, gam, D, bas, LSink);
    Commutator (dim, H, D, D_dot);
   // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
   // Call the three Lindblad Functions with the appropriate arguments here!!!
@@ -261,15 +264,15 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
     for (j=0; j<dim; j++) {
     // NOTE!!! Partial update needs to include contributions from Lindblad terms!
     // rewrite the right hand side of the "k1[i*dim+j] =" line so that these terms are included 
-    k1[i*dim+j] = dt*D_dot[i*dim+j] + dt*L_Deph[i*dim+j] + dt*L_Diss[i*dim+j] + dt*L_Sink[i*dim+j];
+    k1[i*dim+j] = dt*D_dot[i*dim+j] + dt*LDeph[i*dim+j] + dt*LDiss[i*dim+j] + dt*LSink[i*dim+j];
     D2[i*dim+j] = D[i*dim+j] + k1[i*dim+j]/2.;
    }
 
   }
   // Get d/dt of partially-updated D(t)+k1/2
-   L_Deph(dim, alpha, *D, *bas, *P);
-   L_Diss(dim, g, beta, *D, *bas, *P);
-   L_Sink(dim, chan, s, gamma, *D, *bas, *P);
+   L_Deph(dim, alph, D2, bas, LDeph);
+   L_Diss(dim, g, bet, D2, bas, LDiss);
+   L_Sink(dim, chan, s, gam, D2, bas, LSink);
    Commutator (dim, H, D2, D_dot);
   // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
   // Call the three Lindblad Functions with the appropriate arguments here!!!
@@ -278,14 +281,14 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
     for (j=0; j<dim; j++) {
     // NOTE!!! Partial update needs to include contributions from Lindblad terms!
     // rewrite the right hand side of the "k2[i*dim+j] =" line so that these terms are included 
-    k2[i*dim+j] = dt*D_dot[i*dim+j]+ dt*L_Deph[i*dim+j] + dt*L_Diss[i*dim+j] + dt*L_Sink[i*dim+j];
+    k2[i*dim+j] = dt*D_dot[i*dim+j]+ dt*LDeph[i*dim+j] + dt*LDiss[i*dim+j] + dt*LSink[i*dim+j];
     D3[i*dim+j] = D[i*dim+j] + k2[i*dim+j]/2.;
   }
   }
   // Get d/dt of partially-updated D(t)+k2/2
- L_Deph(dim, alpha, *D, *bas, *P);
- L_Diss(dim, g, beta, *D, *bas, *P);
- L_Sink(dim, chan, s, gamma, *D, *bas, *P);
+ L_Deph(dim, alph, D3, bas, LDeph);
+ L_Diss(dim, g, bet, D3, bas, LDiss);
+ L_Sink(dim, chan, s, gam, D3, bas, LSink);
  Commutator (dim,H, D3, D_dot);
   // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
   // Call the three Lindblad Functions with the appropriate arguments here!!!
@@ -294,7 +297,7 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
     for (j=0; j<dim; j++) {
     // NOTE!!! Partial update needs to include contributions from Lindblad terms!
     // rewrite the right hand side of the "k3[i*dim+j] =" line so that these terms are included 
-    k3[i*dim+j] = dt*D_dot[i*dim+j]+ dt*L_Deph[i*dim+j] + dt*L_Diss[i*dim+j] + dt*L_Sink[i*dim+j];
+    k3[i*dim+j] = dt*D_dot[i*dim+j]+ dt*LDeph[i*dim+j] + dt*LDiss[i*dim+j] + dt*LSink[i*dim+j];
     // Complete RK3 update of D(t) -> D(t+dt)
     D_np1[i*dim+j] = D[i*dim+j] + k1[i*dim+j]/6. + 2.*k2[i*dim+j]/3. + k3[i*dim+j]/6.;
     D[i*dim+j] = D_np1[i*dim+j];
@@ -309,9 +312,9 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
   free(k1);
   free(k2);
   free(k3);
-  free(L_Diss);
-  free(L_Deph);
-  free(L_Sink);
+  free(LDiss);
+  free(LDeph);
+  free(LSink);
 }
 
 
@@ -376,18 +379,6 @@ void AntiCommutator(int dim, double *H, double complex *D, double complex *P) {
 // double complex *D -> the current density matrix
 // double *bas -> the basis states for the density matrix
 
-        sum1 += H[i*dim+k]*D[k*dim+j];
-        sum2 += D[i*dim+k]*H[k*dim+j];
-    
-      }
-    
-      P[i*dim+j] = sum1 + sum2;
-  
-    }
-  }
-}
-
-// Lioville operator that controls the transfer of exciton popolution to the reaction center.
 // The argument of this functions are as follows:
 // int dim -> number of states including ground state, exciton states, and sink state... full
 //            FMO model + reaction center will have dim = 9
@@ -488,6 +479,25 @@ void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double 
     AntiCommutator(dim, temp_bas, D, temp_t2);
     for (i=0; i<dim; i++) {
       for (j=0; j<dim; j++) {
+        LD[i*dim+j] += beta*temp_t1[i*dim+j] - beta*temp_t2[i*dim+j];
+      }
+    }
+ }
+ for (i=0; i<dim; i++) {
+   for (j=0; j<dim; j++) {
+     P[i*dim+j] = LD[i*dim+j];
+   }
+ }
+
+
+ free(temp_bas);
+ free(g_bas);
+ free(temp_t1);
+ free(temp_t2);
+ free(LD);
+}
+
+
 // double *bas -> the basis states for the density matrix
 // double complex *P -> The contribution to the time-derivative of the Density matrix coming from dephasing
 void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P) {
