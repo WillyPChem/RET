@@ -11,22 +11,19 @@ void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
 void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P);
 void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
 void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);
-double gamma = 1.21e-8;
-double beta = 7.26e-5;
-double alpha = 1.52e-4;
+double gamma = 1.21*10^-8;
+double beta = 7.26*10^-5;
+double alpha = 1.52*10^-4;
 double pi = 3.14159625;
 
 // NOTE!!!  You need three global variables for the rates associated with 
 // The Lindblad operators - gamma, beta, and alpha should be defined here according
 // to their values in the journal of physical chemistry letters paper
-int dim = 9;
-int g = 0;
-int s = 8;
-int chan = 3;
 
 int main() {
 
-double *H, *bas;
+int dim = 9.;
+double *H;
 double complex *D, *P;
 double dt = .1;
 double dx = 1.;
@@ -37,17 +34,15 @@ P = (double complex *)malloc(dim*dim*sizeof(double complex));
 
 
 
-int(dim, double alpha, double complex *D, double *bas, double complex *P);
-void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
-void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);// Element DM(0,0) = D(0*dim+0)
+// Element DM(0,0) = D(0*dim+0)
 // Element DM(1,0) = D(1*dim+0)
-// D comes from Psi = sqrt(1/2) psi_1 + sqrt(1/2) psi_2
 // Element DM(0,1) = D(0*dim+1)
 // In general, DM(i,j) = D(i*dim+j) where DM is the matrix
 // form of D and D is a vector of length dim*dim
 //
 
 // Initialize Denistry matrix as a superposition state of energy eigenstate 1 and energy eigenstate 2
+// D comes from Psi = sqrt(1/2) psi_1 + sqrt(1/2) psi_2
 D[0*dim + 0] = 0 + 0.*I;
 D[0*dim + 1] = 0 + 0.*I;
 D[1*dim + 0] = 0 + 0.*I;
@@ -230,9 +225,9 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
   
   // NOTE!!! Need to allocate Meomry for the three arrays associated with the Lindblad operators
   // Allocate Memory here!
-  L_Diss = (double complex *)malloc((dim*dim)*sizeof(double complex));
-  L_Deph = (double complex *)malloc((dim*dim)*sizeof(double complex));
-  L_Sink = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  *L_Diss = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  *L_Deph = (double complex *)malloc((dim*dim)*sizeof(double complex));
+  *L_Sink = (double complex *)malloc((dim*dim)*sizeof(double complex));
   // Must zero out all elements of these arrays
   for (i=0; i<dim; i++) {
    for (j=0; j<dim; j++) {
@@ -246,14 +241,16 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
     L_Diss[i*dim+j] = 0. + 0.*I;
     L_Deph[i*dim+j] = 0. + 0.*I;
     L_Sink[i*dim+j] = 0. + 0.*I;
-  }
+
+
+    }
   }
 
-  // Get d/dt of D(t)
-   L_Deph(dim, alpha, *D, *bas, *P);
-   L_Diss(dim, g, beta, *D, *bas, *P);
-   L_Sink(dim, chan, s, gamma, *D, *bas, *P);
-   Commutator (dim, H, D, D_dot);
+  // Get d/dt of D(t) 
+  Commutator (dim, H, D, D_dot);
+  L_Deph(dim, alpha, *D, *bas, *P);
+  L_Diss(dim, g, beta, *D, *bas, *P);
+  L_Sink(dim, chan, s, gamma, *D, *bas, *P);
   // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
   // Call the three Lindblad Functions with the appropriate arguments here!!!
   // Compute approximate wfn update with Euler step
@@ -268,8 +265,8 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
   }
   // Get d/dt of partially-updated D(t)+k1/2
    L_Deph(dim, alpha, *D, *bas, *P);
-   L_Diss(dim, g, beta, *D, *bas, *P);
    L_Sink(dim, chan, s, gamma, *D, *bas, *P);
+   L_Diss(dim, g, beta, *D, *bas, *P); 
    Commutator (dim, H, D2, D_dot);
   // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
   // Call the three Lindblad Functions with the appropriate arguments here!!!
@@ -278,15 +275,15 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
     for (j=0; j<dim; j++) {
     // NOTE!!! Partial update needs to include contributions from Lindblad terms!
     // rewrite the right hand side of the "k2[i*dim+j] =" line so that these terms are included 
-    k2[i*dim+j] = dt*D_dot[i*dim+j]+ dt*L_Deph[i*dim+j] + dt*L_Diss[i*dim+j] + dt*L_Sink[i*dim+j];
+    k2[i*dim+j] = dt*D_dot[i*dim+j] + dt*L_Deph[i*dim+j] + dt*L_Diss[i*dim+j] + dt*L_Sink[i*dim+j];
     D3[i*dim+j] = D[i*dim+j] + k2[i*dim+j]/2.;
   }
   }
   // Get d/dt of partially-updated D(t)+k2/2
- L_Deph(dim, alpha, *D, *bas, *P);
- L_Diss(dim, g, beta, *D, *bas, *P);
- L_Sink(dim, chan, s, gamma, *D, *bas, *P);
- Commutator (dim,H, D3, D_dot);
+   L_Deph(dim, alpha, *D, *bas, *P);
+   L_Sink(dim, chan, s, gamma, *D, *bas, *P);
+   L_Diss(dim, g, beta, *D, *bas, *P);
+   Commutator (dim,H, D3, D_dot);
   // NOTE!!!  Need to get the Lindblad contributions to D_dot as well
   // Call the three Lindblad Functions with the appropriate arguments here!!!
   // Compute approximate update with Euler step
@@ -294,7 +291,7 @@ void RK3(int dim, double *H, double complex *D, double dx, double dt) {
     for (j=0; j<dim; j++) {
     // NOTE!!! Partial update needs to include contributions from Lindblad terms!
     // rewrite the right hand side of the "k3[i*dim+j] =" line so that these terms are included 
-    k3[i*dim+j] = dt*D_dot[i*dim+j]+ dt*L_Deph[i*dim+j] + dt*L_Diss[i*dim+j] + dt*L_Sink[i*dim+j];
+    k3[i*dim+j] = dt*D_dot[i*dim+j] + dt*L_Deph[i*dim+j] + dt*L_Diss[i*dim+j] + dt*L_Sink[i*dim+j];
     // Complete RK3 update of D(t) -> D(t+dt)
     D_np1[i*dim+j] = D[i*dim+j] + k1[i*dim+j]/6. + 2.*k2[i*dim+j]/3. + k3[i*dim+j]/6.;
     D[i*dim+j] = D_np1[i*dim+j];
@@ -351,30 +348,6 @@ void AntiCommutator(int dim, double *H, double complex *D, double complex *P) {
       double complex sum2 = 0+0*I;
       double complex sum1 = 0+0*I;
       for (int k=0; k<dim; k++) {
-
-        sum1 += H[i*dim+k]*D[k*dim+j];
-        sum2 += D[i*dim+k]*H[k*dim+j];
-    
-      }
-    
-      P[i*dim+j] = sum1 + sum2;
-  
-    }
-  }
-}
-
-// Lioville operator that controls the transfer of exciton popolution to the reaction center.
-// The argument of this functions are as follows:
-// int dim -> number of states including ground state, exciton states, and sink state... full
-//            FMO model + reaction center will have dim = 9
-// int chan -> the index of the exciton state the couples directly to the reaction center, aka, the channel.  In the FMO model
-//             described in J Chem Phys Lett, chromophore 3 couples to the reaction center, so 
-//             so chan=3 in that case 
-// int s    -> the index of the state the corresponds to the reaction center (aka sink)... in the FMO model
-//             described in the J Chem Phys Lett, the sink has index = 8
-// double gamma -> a rate constant which describes rate of transfer from the chan chromophore to the sink state
-// double complex *D -> the current density matrix
-// double *bas -> the basis states for the density matrix
 
         sum1 += H[i*dim+k]*D[k*dim+j];
         sum2 += D[i*dim+k]*H[k*dim+j];
@@ -488,6 +461,30 @@ void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double 
     AntiCommutator(dim, temp_bas, D, temp_t2);
     for (i=0; i<dim; i++) {
       for (j=0; j<dim; j++) {
+        LD[i*dim+j] += beta*temp_t1[i*dim+j] - beta*temp_t2[i*dim+j];
+      }
+    }
+ }
+ for (i=0; i<dim; i++) {
+   for (j=0; j<dim; j++) {
+     P[i*dim+j] = LD[i*dim+j];
+   }
+ }
+
+
+ free(temp_bas);
+ free(g_bas);
+ free(temp_t1);
+ free(temp_t2);
+ free(LD);
+}
+
+// Lioville operator that models "dephasing"
+// The argument of this functions are as follows:
+// int dim -> number of states including ground state, exciton states, and sink state... full
+//            FMO model + reaction center will have dim = 9
+// double alpha -> The dephasing rate
+// double complex *D -> the current density matrix
 // double *bas -> the basis states for the density matrix
 // double complex *P -> The contribution to the time-derivative of the Density matrix coming from dephasing
 void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P) {
