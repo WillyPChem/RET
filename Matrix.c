@@ -28,7 +28,7 @@ int main() {
 
 double *H, *bas;
 double complex *D, *P;
-double dt = .1;
+double dt = 1.;
 double dx = 1.;
 
 H = (double *)malloc(dim*dim*sizeof(double));
@@ -179,7 +179,7 @@ for (int i=0; i<dim; i++) {
 //void RK3(int dim, double *xvec, double complex *wfn, double dx, double dt)
 
 
-for (int j=0; j<500000; j++) {
+for (int j=0; j<50000; j++) {
 
   
 
