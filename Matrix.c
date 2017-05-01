@@ -11,9 +11,9 @@ void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
 void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P);
 void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
 void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);
-double gam = 1.21e-8;
-double bet = 7.26e-5;
-double alph = 1.52e-4;
+double gam = 1.21e-8/2;
+double bet = 7.26e-5/2;
+double alph = 1.52e-4/2;
 double pi = 3.14159625;
 
 // NOTE!!!  You need three global variables for the rates associated with 
