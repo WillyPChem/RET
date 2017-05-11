@@ -11,9 +11,9 @@ void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
 void L_Deph(int dim, double alpha, double complex *D, double *bas, double complex *P);
 void L_Diss(int dim, int g, double beta, double complex *D, double *bas, double complex *P);
 void L_Sink(int dim, int chan, int s, double gamma, double complex *D, double *bas, double complex *P);
-double gam = 1.21e-8/2;
-double bet = 7.26e-5/2;
-double alph = 1.52e-4/2;
+double gam = 1.21e-8*0;
+double bet = 7.26e-5;
+double alph = 1.52e-4;
 double pi = 3.14159625;
 
 // NOTE!!!  You need three global variables for the rates associated with 
@@ -54,7 +54,7 @@ for (int i=0; i<dim; i++) {
 D[0*dim + 0] = 0 + 0.*I;
 D[0*dim + 1] = 0 + 0.*I;
 D[1*dim + 0] = 0 + 0.*I;
-D[3*dim + 3] = 1. + 0.*I;
+D[1*dim + 1] = 1. + 0.*I;
 
 /*
 D[0*dim + 0] = 0.;
@@ -513,6 +513,9 @@ void L_Deph(int dim, double alpha, double complex *D, double *bas, double comple
   for (i=0; i<dim; i++) {
     for (j=0; j<dim; j++) {
       LD[i*dim+j] = 0. + 0.*I;
+      temp_bas[i*dim+j] = 0.;
+      temp_t1[i*dim+j] = 0. + 0.*I;
+      temp_t2[i*dim+j] = 0. + 0.*I;
     }
   }
 
