@@ -65,7 +65,7 @@ c       rlambda will start at 200 nm
         rdlambda=800.d0/1000.d0
 
         open(unit=8,file=
-     >  'DIEL/Pt_Palik.txt')
+     >  'DIEL/Au_JC_e.txt')
 
         do jj=1,1778
         read(8,*)rlambda,epsre,epsim
