@@ -41,7 +41,7 @@ double alph = 7.26e-5;
 int main() {
 
   int dim = 9;
-  double *H, *bas;
+  double *H, *bas, *E, *Mu, *Dis;
   double complex *D, *P, *C, *Ct, *Dp;
   double dt = 0.1;
   double dx = 1.;
@@ -53,7 +53,10 @@ int main() {
   C = (double complex *)malloc(dim*sizeof(double complex));
   Ct= (double complex *)malloc(dim*sizeof(double complex));
   bas = (double *)malloc(dim*dim*sizeof(double));
-
+  E  = (double *)malloc(dim*dim*sizeof(double));
+  Mu = (double *)malloc(dim*dim*sizeof(double));
+  Dis = (double *)malloc(dim*dim*sizeof(double));
+  
   // Element DM(0,0) = D(0*dim+0)
   // Element DM(1,0) = D(1*dim+0)
   // Element DM(0,1) = D(0*dim+1)
@@ -88,6 +91,35 @@ D[0*dim + 1] = 0 + 0.*I;
 D[1*dim + 0] = 0 + 0.*I;
 D[1*dim + 1] = 1. + 0.*I;
 
+
+// Variable that is a file pointer for each data file:
+FILE *Efp, *mufp, *disfp;
+
+// Open each file for reading
+Efp = fopen("Energy.txt","r");
+mufp = fopen("Dipole.txt","r");
+disfp = fopen("Dissipation.txt","r");  
+  
+double val;
+for (int i=0; i<dim; i++) {
+
+   for (int j=0; j<dim; j++) {
+
+     // Read from energy file and store to the energy matrix
+     fscanf(Efp,"%lf",&val);
+     E[i*dim+j] = val;
+
+     fscanf(mufp,"%lf",&val);
+     Mu[i*dim+j] = val;
+
+     fscanf(disfp,"%lf",&val);
+     Dis[i*dim+j] = val;
+
+   }
+}
+  
+  
+/*
 L[1*dim+1] = 0.;
 L[1*dim+2] = 1.985;
 L[1*dim+3] = 1.575;
@@ -177,7 +209,7 @@ L[9*dim+6] = -u23;
 L[9*dim+7] = 1.575;
 L[9*dim+8] = u23;
 L[9*dim+9] = 0.; 
- 
+*/
 /*
 D[0*dim + 0] = 0.;
 D[1*dim + 1] = 0.;
