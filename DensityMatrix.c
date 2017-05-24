@@ -81,6 +81,15 @@ int main() {
     //void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double complex *D, double dt)
     RK3(Nlevel, dt*i, E, Mu, Dis, D, dt);
 
+ double complex Dip;
+	for (int h=0; h<dim; h++){
+
+	  for (int j=0; j<dim; j++){
+          
+  	 Dip = D[h*dim+j]*E[h*dim+j];
+}
+}
+
     printf("\n %f ",dt*i*0.02418);
     tr=0.;
     for (int j=0; j<Nlevel; j++) {
