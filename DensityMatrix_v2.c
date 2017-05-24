@@ -28,7 +28,7 @@ int main() {
   int dim = Nlevel*Nlevel;
   double *E, *Mu, *Dis;
   double complex *H, *D, *P;
-  double dt = 0.005;
+  double dt = 0.01;
 
   H = (double complex*)malloc(dim*sizeof(double complex));
   D = (double complex *)malloc(dim*sizeof(double complex));
@@ -72,13 +72,14 @@ int main() {
   PrintRealMatrix(Nlevel,Mu);
   printf("\nDiss\n");
   PrintRealMatrix(Nlevel,Dis);
+
   double tr=0.;
-  for (int i=1; i<500000; i++) {
+  for (int i=1; i<400000; i++) {
 
     //void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double complex *D, double dt)
     RK3(Nlevel, dt*i, E, Mu, Dis, D, dt);
 
-    printf("\n %f ",dt*i*0.02418);
+    printf("\n %f ",dt*i);
     tr=0.;
     for (int j=0; j<Nlevel; j++) {
 
@@ -160,12 +161,16 @@ void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double com
 
   } 
 
+  //PrintComplexMatrix(Nlevel, H);
+
   // Get dPsi(n)/dt at initial time!
   Liouville(Nlevel, H, D, D_dot);
 
+  //PrintComplexMatrix(Nlevel, D);
+  //PrintComplexMatrix(Nlevel, D_dot);
   // Compute approximate wfn update with Euler step
   for (i=0; i<dim; i++) {
-    k1[i] = dt*D_dot[i*dim+j];
+    k1[i] = dt*D_dot[i];
     D2[i] = D[i] + k1[i]/2.;
   }
 
@@ -175,13 +180,11 @@ void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double com
   // Compute full Hamiltonian at partially updated time t 
   for (i=0; i<dim; i++) {
 
-    for (j=0; j<dim; j++) {
+      H[i] = E[i] + Efield*Mu[i] + I*Dis[i];
 
-      H[i*dim+j] = E[i*dim+j] + Efield*Mu[i*dim+j] + I*Dis[i*dim+j];
-
-    }
   }
 
+  //PrintComplexMatrix(Nlevel, H);
   // Get dPsi(n+k1/2)/dt
   Liouville (Nlevel, H, D2, D_dot);
   // Compute approximate wfn update with Euler step
