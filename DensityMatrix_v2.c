@@ -1,46 +1,65 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
-#include<malloc.h>
-#include<complex.h>
+#include</usr/include/malloc/malloc.h>
+#include</usr/include/complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
-void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double complex *D, double dt);
+void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Dis, double complex *D, double dt);
 void Liouville(int dim, double complex *H, double complex *D, double complex *P);
 void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
 void PrintComplexMatrix(int dim, double complex *M);
 void PrintRealMatrix(int dim, double *M);
 void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM);
+void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double complex *P);
+void Fourier (double complex *dm, int n, double dt);
 double E_Field(double time);
+double complex TrMuD(int Nlevel, double *Mu, double complex *D);
 
 // NOTE!!!  You need three global variables for the rates associated with 
 // The Lindblad operators - gamma, beta, and alpha should be defined here according
 // to their values in the journal of physical chemistry letters paper
-int Nlevel = 3;
-int dim = Nlevel*Nlevel;
+//int Nlevel = 3;
+//int dim = Nlevel*Nlevel;
 
 double pi = 4*atan(1.0);
 double wn_to_au = 4.55633528e-6; 
 
 int main() {
 
-  
-  int dim = Nlevel*Nlevel;
-  double *E, *Mu, *Dis;
-  double complex *H, *D, *P;
+  int Nlevel = 3;
+  int numTime = 400000;
+  int zeropad = 100000;
+  int dim = Nlevel*Nlevel;  
+  double *E, *Mu, *Dis, *bas;
+  double complex *H, *D, *P, *dipole;
   double dt = 0.01;
 
+  dipole = (double complex *)malloc((numTime+zeropad)*sizeof(double complex));
   H = (double complex*)malloc(dim*sizeof(double complex));
   D = (double complex *)malloc(dim*sizeof(double complex));
   P = (double complex *)malloc(dim*sizeof(double complex));
   E  = (double *)malloc(dim*sizeof(double));
   Mu = (double *)malloc(dim*sizeof(double));
   Dis = (double *)malloc(dim*sizeof(double));
+  bas = (double *)malloc(dim*sizeof(double));
   
   // Initialize Denistry matrix as a superposition state of energy eigenstate 1 and energy eigenstate 2
   // Density matrix element D(i,j) is accessed as D[i*Nlevel+j];
   D[0] = 1. + 0.*I;
   for (int i=1; i<dim; i++) D[i] = 0. + 0.*I;
+
+
+  // BUILD DM BASIS
+  for (int i=0; i<Nlevel; i++) {
+    for (int j=0; j<Nlevel; j++) {
+
+      if (i==j) bas[i*Nlevel+j] = 1.0;
+
+      else bas[i*Nlevel+j] = 0.;
+
+    }
+  }
 
   // Variable that is a file pointer for each data file:
   FILE *Efp, *mufp, *disfp;
@@ -74,10 +93,14 @@ int main() {
   PrintRealMatrix(Nlevel,Dis);
 
   double tr=0.;
-  for (int i=1; i<400000; i++) {
+  double complex dipole_moment;
+  FILE *dfp;
+  dfp = fopen("DipoleMoment.txt","w");
 
-    //void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double complex *D, double dt)
-    RK3(Nlevel, dt*i, E, Mu, Dis, D, dt);
+  dipole[0] = TrMuD(Nlevel, Mu, D);
+  for (int i=1; i<numTime; i++) {
+
+    RK3(Nlevel, dt*i, bas, E, Mu, Dis, D, dt);
 
     printf("\n %f ",dt*i);
     tr=0.;
@@ -87,7 +110,21 @@ int main() {
       tr+=creal(D[j*Nlevel+j]);
     }
     printf("\n #Trace is %12.10e",tr);
+    dipole_moment = TrMuD(Nlevel, Mu, D);
+    dipole[i] = dipole_moment;
+    fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_moment),cimag(dipole_moment));
   }
+
+  for (int i=numTime; i<zeropad; i++) {
+
+    dipole[i] = 0. + 0.*I;
+
+  }
+
+  Fourier(dipole, numTime+zeropad, dt);
+
+  fclose(dfp);
+  return 0;
 }
 
 void PrintRealMatrix(int dim, double *M) {
@@ -120,11 +157,12 @@ void PrintComplexMatrix(int dim, double complex *M) {
   }
   printf("\n");
 }
-void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double complex *D, double dt) {
+void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Dis, double complex *D, double dt) {
 
   int i, j;
   double complex *D_dot, *D2, *D3, *D_np1, *k1, *k2, *k3;
-  double complex *H;  // Contribution to Ddot from Lindblad dissipation
+  double complex *H, *LD;  // Contribution to Ddot from Lindblad dissipation
+  double *gamma;
   int dim = Nlevel*Nlevel; 
   double Efield;
 
@@ -136,7 +174,8 @@ void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double com
   k2    = (double complex *)malloc(dim*sizeof(double complex));
   k3    = (double complex *)malloc(dim*sizeof(double complex));
   H     = (double complex *)malloc(dim*sizeof(double complex));
-
+  LD    = (double complex *)malloc(dim*sizeof(double complex));
+  gamma = (double *)malloc(Nlevel*sizeof(double));
   
   // Must zero out all elements of these arrays
   for (i=0; i<dim; i++) {
@@ -151,13 +190,17 @@ void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double com
    
   }
 
+  gamma[0] = 0.;
+  gamma[1] = Dis[1*Nlevel+1];
+  gamma[2] = Dis[2*Nlevel+2];
+
   Efield = E_Field(time);
 
   // Compute full Hamiltonian at current time t 
   for (i=0; i<dim; i++) {
 
 
-      H[i] = E[i] + Efield*Mu[i] + I*Dis[i];
+      H[i] = E[i] + Efield*Mu[i]; // - I*Dis[i];
 
   } 
 
@@ -165,12 +208,14 @@ void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double com
 
   // Get dPsi(n)/dt at initial time!
   Liouville(Nlevel, H, D, D_dot);
-
+  L_Diss(Nlevel, gamma, D, bas, LD);
   //PrintComplexMatrix(Nlevel, D);
   //PrintComplexMatrix(Nlevel, D_dot);
+
+
   // Compute approximate wfn update with Euler step
   for (i=0; i<dim; i++) {
-    k1[i] = dt*D_dot[i];
+    k1[i] = dt*(D_dot[i]+LD[i]);
     D2[i] = D[i] + k1[i]/2.;
   }
 
@@ -180,24 +225,28 @@ void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double com
   // Compute full Hamiltonian at partially updated time t 
   for (i=0; i<dim; i++) {
 
-      H[i] = E[i] + Efield*Mu[i] + I*Dis[i];
+      H[i] = E[i] + Efield*Mu[i]; // - I*Dis[i];
 
   }
 
   //PrintComplexMatrix(Nlevel, H);
   // Get dPsi(n+k1/2)/dt
   Liouville (Nlevel, H, D2, D_dot);
+  L_Diss(Nlevel, gamma, D2, bas, LD);
+  
   // Compute approximate wfn update with Euler step
   for (i=0; i<dim; i++) {
-    k2[i] = dt*D_dot[i];
+    k2[i] = dt*(D_dot[i] + LD[i]);
     D3[i] = D[i] + k2[i]/2.;
   }
 
   // Get dPsi(n+k2/2)/dt
   Liouville (Nlevel, H, D3, D_dot);
+  L_Diss(Nlevel, gamma, D3, bas, LD);
+
   // Compute approximate update with Euler step
   for (i=0; i<dim; i++) {
-    k3[i] = dt*D_dot[i];
+    k3[i] = dt*(D_dot[i] + LD[i]);
     D_np1[i] = D[i] + k1[i]/6. + 2.*k2[i]/3. + k3[i]/6.;
     D[i] = D_np1[i];
 }
@@ -211,6 +260,7 @@ void RK3(int Nlevel, double time, double *E, double *Mu, double *Dis, double com
   free(k2);
   free(k3);
   free(H);
+  free(gamma);
 }
 
 void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM) {
@@ -275,9 +325,10 @@ for (int i=0; i<dim; i++) {
 double E_Field(double time) {
 
   double Ef;
-  if (time<415.) {
+  double tau = 207.;
+  if (time<tau) {
 
-    Ef = 0.001*sin(time*pi/415)*sin(time*pi/415)*sin(0.07423*time);
+    Ef = 0.01*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
 
   }
   else Ef = 0.;
@@ -287,3 +338,102 @@ double E_Field(double time) {
 
 }
 
+void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double complex *P) {
+
+  int i, j, k;
+  double *temp_bas, *g_bas;
+  double complex *temp_t1, *temp_t2, *LD;
+  temp_bas = (double *)malloc(Nlevel*Nlevel*sizeof(double));
+  g_bas    = (double *)malloc(Nlevel*Nlevel*sizeof(double));
+  temp_t1  = (double complex *)malloc(Nlevel*Nlevel*sizeof(double complex));
+  temp_t2  = (double complex *)malloc(Nlevel*Nlevel*sizeof(double complex));
+  LD       = (double complex *)malloc(Nlevel*Nlevel*sizeof(double complex));
+
+  // Form |g><g| matrix
+  for (i=0; i<Nlevel; i++) {
+    for (j=0; j<Nlevel; j++) {
+      g_bas[i*Nlevel+j] = bas[0*Nlevel+i]*bas[j*Nlevel+0];
+      LD[i*Nlevel+j] = 0. + 0.*I;
+    }
+  }
+  //printf("  |g><g|  \n");
+  //PrintRealMatrix(Nlevel, g_bas);
+
+  for (k=1; k<Nlevel; k++) {
+
+    for (i=0; i<Nlevel; i++) {
+
+      for (j=0; j<Nlevel; j++) {
+
+        temp_bas[i*Nlevel+j] = bas[k*Nlevel+i]*bas[j*Nlevel+k];
+        temp_t1[i*Nlevel+j] = 2*D[k*Nlevel+k]*g_bas[i*Nlevel+j];
+      }
+    }
+   // printf("   |%i><%i| \n",k,k);
+   // PrintRealMatrix(Nlevel, temp_bas);
+
+    AntiCommutator(Nlevel, temp_bas, D, temp_t2);
+    for (i=0; i<Nlevel; i++) {
+      for (j=0; j<Nlevel; j++) {
+        LD[i*Nlevel+j] += gamma[2]*temp_t1[i*Nlevel+j] - gamma[2]*temp_t2[i*Nlevel+j];
+      }
+    }
+ }
+ for (i=0; i<Nlevel; i++) {
+   for (j=0; j<Nlevel; j++) {
+     P[i*Nlevel+j] = LD[i*Nlevel+j];
+   }
+ }
+
+ //PrintComplexMatrix(Nlevel, P);
+
+ free(temp_bas);
+ free(g_bas);
+ free(temp_t1);
+ free(temp_t2);
+ free(LD);
+}
+
+void Fourier (double complex *dm, int n, double dt){
+  FILE *fp;
+  fp = fopen("Absorption_Spectrum.txt","w");
+  double wmin=0.5*0.07;
+  double wmax=2*0.07;
+  int maxk = 500;
+  double dw = (wmax-wmin)/maxk;
+  double time;
+ 
+  for (int k = 0; k <=maxk; k++) {
+    double sumreal = 0;
+    double sumimag = 0;
+    double  w = wmin+k*dw;
+
+    for (int t = 0; t < n; t++){
+      time = dt*t;
+      double angle = time*w;
+      sumreal += creal(dm[t]) * cos(angle) + 0. * sin(angle);
+      sumimag  += -creal(dm[t]) * sin(angle) + 0. * cos(angle);
+    }
+    fprintf(fp," %12.10e  %12.10e\n",w*(27.2114),sumreal*sumreal+sumimag*sumimag);
+  }
+  fclose(fp);
+}
+
+double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
+
+  double complex tr = 0. + 0.*I;
+  for (int i=0; i<Nlevel; i++) {
+
+    double sum = 0. + 0.*I;
+    for (int k=0; k<Nlevel; k++) {
+
+      sum += Mu[i*Nlevel+k]*D[k*Nlevel+i];
+
+    }
+    tr += sum;
+
+  } 
+
+  return tr;
+
+}
