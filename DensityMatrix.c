@@ -1,8 +1,8 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
-#include</usr/include/malloc/malloc.h>
-#include</usr/include/complex.h>
+#include<malloc.h>
+#include<complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Dis, double complex *D, double dt);
@@ -65,9 +65,9 @@ int main() {
   FILE *Efp, *mufp, *disfp;
 
   // Open each file for reading
-  Efp = fopen("Energy.txt","r");
-  mufp = fopen("Dipole.txt","r");
-  disfp = fopen("Dissipation.txt","r");  
+  Efp = fopen("EnergyAu.txt","r");
+  mufp = fopen("DipoleAu.txt","r");
+  disfp = fopen("DissipationAu.txt","r");  
   
   double val;
   for (int i=0; i<dim; i++) {
@@ -325,7 +325,7 @@ for (int i=0; i<dim; i++) {
 double E_Field(double time) {
 
   double Ef;
-  double tau = 207.;
+  double tau = 250.;
   if (time<tau) {
 
     Ef = 0.01*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
@@ -396,7 +396,7 @@ void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double co
 
 void Fourier (double complex *dm, int n, double dt){
   FILE *fp;
-  fp = fopen("Absorption_Spectrum.txt","w");
+  fp = fopen("Absorption_SpectrumAu.txt","w");
   double wmin=0.5*0.07;
   double wmax=2*0.07;
   int maxk = 500;
@@ -424,7 +424,7 @@ double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
   double complex tr = 0. + 0.*I;
   for (int i=0; i<Nlevel; i++) {
 
-    double sum = 0. + 0.*I;
+    double complex sum = 0. + 0.*I;
     for (int k=0; k<Nlevel; k++) {
 
       sum += Mu[i*Nlevel+k]*D[k*Nlevel+i];
