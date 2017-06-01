@@ -325,7 +325,7 @@ for (int i=0; i<dim; i++) {
 double E_Field(double time) {
 
   double Ef;
-  double tau = 250.;
+  double tau = 75.;
   if (time<tau) {
 
     Ef = 0.01*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
