@@ -14,6 +14,7 @@ void PrintRealMatrix(int dim, double *M);
 void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM);
 void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double complex *P);
 void Fourier (double complex *dm, int n, double dt);
+void TrMuMol (int dim, double complex *H, double complex *D, double *Mu);
 double E_Field(double time);
 double complex TrMuD(int Nlevel, double *Mu, double complex *D);
 
@@ -31,7 +32,7 @@ double pi = 4*atan(1.0);
 double wn_to_au = 4.55633528e-6; 
 
 int main() {
-
+//Nanoparticles Variables here
   int Nlevel = 3;
   int numTime = 400000;
   int zeropad = 100000;
@@ -48,6 +49,23 @@ int main() {
   Mu = (double *)malloc(dim*sizeof(double));
   Dis = (double *)malloc(dim*sizeof(double));
   bas = (double *)malloc(dim*sizeof(double));
+
+//Molecule Variables here
+ // int Nlevel = 3;
+ // int dim = Nlevel*Nlevel;
+  double *EMG, *MuMG, *DisMG, *basMG;
+  double complex *HMG, *DMG, *PMG, *dipoleMG;
+ // double dt = 0.01;
+
+  dipoleMG = (double complex *)malloc((numTime+zeropad)*sizeof(double complex));
+  HMG = (double complex*)malloc(dim*sizeof(double complex));
+  DMG = (double complex *)malloc(dim*sizeof(double complex));
+  PMG = (double complex *)malloc(dim*sizeof(double complex));
+  EMG  = (double *)malloc(dim*sizeof(double));
+  MuMG = (double *)malloc(dim*sizeof(double));
+  DisMG = (double *)malloc(dim*sizeof(double));
+  basMG = (double *)malloc(dim*sizeof(double));
+
   
   // Initialize Denistry matrix as a superposition state of energy eigenstate 1 and energy eigenstate 2
   // Density matrix element D(i,j) is accessed as D[i*Nlevel+j];
@@ -131,6 +149,70 @@ int main() {
   fclose(dfp);
   return 0;
 }
+
+ FILE *EfpMG, *mufpMG, *disfpMG;
+
+  // Open each file for reading
+  EfpMG = fopen("Energy.txt","r");
+  mufpMG = fopen("Dipole.txt","r");
+  disfpMG = fopen("Dissipation.txt","r");
+
+ double val;
+  for (int i=0; i<dim; i++) {
+
+
+       // Read from energy file and store to the energy matrix
+       fscanf(Efp,"%lf",&val);
+       EMG[i] = val;
+
+       fscanf(mufp,"%lf",&val);
+       MuMG[i] = val;
+
+       fscanf(disfp,"%lf",&val);
+       DisMG[i] = val;
+
+  }
+
+  printf("\nE\n");
+  PrintRealMatrix(Nlevel, EMG);
+  printf("\nMu\n");
+  PrintRealMatrix(Nlevel,MuMG);
+  printf("\nDiss\n");
+  PrintRealMatrix(Nlevel,DisMG);
+
+  double tr=0.;
+  double complex dipole_momentMG;
+  FILE *dfp;
+  dfp = fopen("DipoleMomentMG.txt","w");
+
+  dipoleMG[0] = TrMuD(Nlevel, MuMG, D);
+  for (int i=1; i<numTime; i++) {
+
+    RK3(Nlevel, dt*i, basMG, EMG, MuMG, DisMG, DMG, dt);
+
+    printf("\n %f ",dt*i);
+    tr=0.;
+    for (int j=0; j<Nlevel; j++) {
+
+      printf(" %12.10e",creal(D[j*Nlevel+j]));
+      tr+=creal(D[j*Nlevel+j]);
+    }
+    printf("\n #Trace is %12.10e",tr);
+    dipole_momentMG = TrMuDMG(Nlevel, MuMG, DMG);
+    dipoleMG[i] = dipole_momentMG;
+    fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_momentMG),cimag(dipole_momentMG));
+  }
+  for (int i=numTime; i<zeropad; i++) {
+
+    dipoleMG[i] = 0. + 0.*I;
+
+  }
+
+  Fourier(dipole, numTime+zeropad, dt);
+
+  fclose(dfp);
+  return 0;
+ 
 
 void PrintRealMatrix(int dim, double *M) {
 
@@ -270,6 +352,9 @@ void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Di
   free(H);
   free(gamma);
 }
+
+
+
 
 void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM) {
 
@@ -446,6 +531,7 @@ double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
 
 }
 
+<<<<<<< HEAD:CoupledDensityMatrix.c
 
 void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) {
   
@@ -474,5 +560,28 @@ void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) {
   // And Here!
   free(tmp1);
   free(tmp2); 
+=======
+double complex Hint(int Nlevel, double complex *D, double *MU, double complex *DMG, double *MuMG, double R);
+
+double R = 1.;
+double complex TrMumol = 0. + 0.*I;
+double complex TrMuNp = 0. + 0.*I;
+
+
+int i,j,k;
+ for (int i=0; i<Nlevel; i++){
+
+     for (int j=0, j<Nlevel; j++){
+
+      for (int k=0, k<Nlevel; k++){
+
+  sum += (1/R^3)*(MuNp*MuMol- ((MuNp*R)(R*MuMol)/R^2))
+
+}
+  Hint += sum;
+}
+
+return Hint;
+>>>>>>> e3139d15afb7b1d9f8da477d76fc482fcb4c356f:DensityMatrix.c
 
 }
