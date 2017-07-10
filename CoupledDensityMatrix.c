@@ -1,8 +1,9 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
-#include<malloc.h>
-#include<complex.h>
+
+#include</usr/include/malloc/malloc.h>
+#include</usr/include/complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Dis, double complex *D, double dt);
@@ -15,6 +16,10 @@ void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double co
 void Fourier (double complex *dm, int n, double dt);
 double E_Field(double time);
 double complex TrMuD(int Nlevel, double *Mu, double complex *D);
+
+// Function prototype for H_interaction
+void H_interaction(int dim, double *Hint, double *mu, double dpm, double R);
+
 
 // NOTE!!!  You need three global variables for the rates associated with 
 // The Lindblad operators - gamma, beta, and alpha should be defined here according
@@ -207,6 +212,9 @@ void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Di
   //PrintComplexMatrix(Nlevel, H);
 
   // Get dPsi(n)/dt at initial time!
+  // Two main changes needed to couple the molecule and nanoparticle:
+  // (1) Liouville function needs to include H_interaction
+  // (2) We need to use Liouville/L_Diss to update both the molecule and the nanoparticle density matrix
   Liouville(Nlevel, H, D, D_dot);
   L_Diss(Nlevel, gamma, D, bas, LD);
   //PrintComplexMatrix(Nlevel, D);
@@ -435,5 +443,36 @@ double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
   } 
 
   return tr;
+
+}
+
+
+void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) {
+  
+  int i; 
+  double *tmp1, *tmp2;
+  double oer2, oer3, RdMu;
+ 
+  oer2 = pow(R,-2);
+  oer3 = pow(R,-3);
+  
+  tmp1 = (double *)malloc(dim*dim*sizeof(double));
+  tmp2 = (double *)malloc(dim*dim*sizeof(double));
+
+  // Write code between here!
+ 
+ for (i=0; i<dim*dim; i++){
+
+ tmp1[i] = dpm*mu[i];
+ tmp2[i] = R*mu[i];
+
+ Hint[i] = oer3*(tmp1[i]-tmp2[i]*R*dpm*oer2); 
+} 
+
+ 
+
+  // And Here!
+  free(tmp1);
+  free(tmp2); 
 
 }
