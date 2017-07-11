@@ -6,7 +6,7 @@
 #include</usr/include/complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
-void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Dis, double complex *D, double dt);
+void RK3(int Nlevel, double time, double *bas, double *E, double *Hint, double *Mu, double *Dis, double complex *D, double dt);
 void Liouville(int dim, double complex *H, double complex *D, double complex *P);
 void AntiCommutator(int dim, double *H, double complex *D, double complex *P);
 void PrintComplexMatrix(int dim, double complex *M);
@@ -37,7 +37,7 @@ int main() {
   int numTime = 400000;
   int zeropad = 100000;
   int dim = Nlevel*Nlevel;  
-  double *E, *Mu, *Dis, *bas;
+  double *E, *Mu, *Dis, *bas, *Hint;
   double complex *H, *D, *P, *dipole;
   double dt = 0.01;
 
@@ -49,11 +49,12 @@ int main() {
   Mu = (double *)malloc(dim*sizeof(double));
   Dis = (double *)malloc(dim*sizeof(double));
   bas = (double *)malloc(dim*sizeof(double));
+  Hint = (double *)malloc(dim*sizeof(double));
 
 //Molecule Variables here
  // int Nlevel = 3;
  // int dim = Nlevel*Nlevel;
-  double *EMG, *MuMG, *DisMG, *basMG;
+  double *EMG, *MuMG, *DisMG, *basMG, *HintMG;
   double complex *HMG, *DMG, *PMG, *dipoleMG;
  // double dt = 0.01;
 
@@ -65,32 +66,44 @@ int main() {
   MuMG = (double *)malloc(dim*sizeof(double));
   DisMG = (double *)malloc(dim*sizeof(double));
   basMG = (double *)malloc(dim*sizeof(double));
-
+  HintMG = (double *)malloc(dim*sizeof(double));
   
   // Initialize Denistry matrix as a superposition state of energy eigenstate 1 and energy eigenstate 2
   // Density matrix element D(i,j) is accessed as D[i*Nlevel+j];
   D[0] = 1. + 0.*I;
-  for (int i=1; i<dim; i++) D[i] = 0. + 0.*I;
-
+  DMG[0] = 1. + 0.*I;
+   for (int i=1; i<dim; i++){
+ D[i] = 0. + 0.*I;
+ DMG[i] = 0. + 0.*I;
+  
+}
 
   // BUILD DM BASIS
   for (int i=0; i<Nlevel; i++) {
     for (int j=0; j<Nlevel; j++) {
 
-      if (i==j) bas[i*Nlevel+j] = 1.0;
-
-      else bas[i*Nlevel+j] = 0.;
-
+      if (i==j){
+ bas[i*Nlevel+j] = 1.0;
+ basMG[i*Nlevel+j] = 1.0;
+}     
+      else{
+ bas[i*Nlevel+j] = 0.;
+ basMG[i*Nlevel+j] = 0.;
     }
   }
+}
 
   // Variable that is a file pointer for each data file:
-  FILE *Efp, *mufp, *disfp;
+  FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
-  Efp = fopen("EnergyAu.txt","r");
-  mufp = fopen("DipoleAu.txt","r");
-  disfp = fopen("DissipationAu.txt","r");  
+  Efp = fopen("Matrices/EnergyAu.txt","r");
+  Mufp = fopen("Matrices/DipoleAu.txt","r");
+  Disfp = fopen("Matrices/DissipationAu.txt","r");  
+ 
+  EfpMG = fopen("Matrices/Energy.txt","r");
+  MufpMG = fopen("Matrices/Dipole.txt","r");
+  DisfpMG = fopen("Matrices/Dissipation.txt","r");
   
   double val;
   for (int i=0; i<dim; i++) {
@@ -100,11 +113,21 @@ int main() {
        fscanf(Efp,"%lf",&val);
        E[i] = val;
 
-       fscanf(mufp,"%lf",&val);
+       fscanf(Mufp,"%lf",&val);
        Mu[i] = val;
 
-       fscanf(disfp,"%lf",&val);
+       fscanf(Disfp,"%lf",&val);
        Dis[i] = val;
+
+       fscanf(EfpMG,"%lf",&val);
+       EMG[i] = val;
+
+       fscanf(MufpMG,"%lf",&val);
+       MuMG[i] = val;
+
+       fscanf(DisfpMG,"%lf",&val);
+       DisMG[i] = val;
+
 
   }
 
@@ -112,31 +135,68 @@ int main() {
   PrintRealMatrix(Nlevel, E);
   printf("\nMu\n");
   PrintRealMatrix(Nlevel,Mu);
-  printf("\nDiss\n");
+  printf("\nDis\n");
   PrintRealMatrix(Nlevel,Dis);
 
+  printf("\nEMG\n");
+  PrintRealMatrix(Nlevel, EMG);
+  printf("\nMuMG\n");
+  PrintRealMatrix(Nlevel, MuMG);
+  printf("\nDisMG\n");
+  PrintRealMatrix(Nlevel, DisMG);
+
+
   double tr=0.;
-  double complex dipole_moment;
-  FILE *dfp;
+  double complex dipole_moment, dipole_momentMG;
+  FILE *dfp, *dfpMG;
   dfp = fopen("DipoleMoment.txt","w");
+  dfpMG = fopen("DipoleMomentMG.txt", "w");
 
-  dipole[0] = TrMuD(Nlevel, Mu, D);
-  for (int i=1; i<numTime; i++) {
+  dipole_moment = TrMuD(Nlevel, Mu, D);
+  dipole_momentMG = TrMuD(Nlevel, MuMG, DMG);
 
-    RK3(Nlevel, dt*i, bas, E, Mu, Dis, D, dt);
+  double r = 10.;
+   
+  //void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) 
+  H_interaction(Nlevel, Hint, Mu, dipole_momentMG, r); 
+  H_interaction(Nlevel, HintMG, MuMG, dipole_moment, r);
+ 
+ for (int i=1; i<numTime; i++) {
 
-    printf("\n %f ",dt*i);
-    tr=0.;
+    // Calculate Hint now!
+    
+RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
+    
+    dipole_moment = TrMuD(Nlevel, Mu, D); 
+    
+    H_interaction(Nlevel, HintMG, MuMG, dipole_moment, r);
+    
+    RK3(Nlevel, dt*i, basMG, EMG, HintMG, MuMG, DisMG, DMG, dt);
+    
+    dipole_momentMG = TrMuD(Nlevel, MuMG, DMG);
+    
+    H_interaction(Nlevel, Hint, Mu, dipole_momentMG, r); 
+   
+
+ /*printf("\n %f ",dt*i);
+   tr=0.;
     for (int j=0; j<Nlevel; j++) {
-
+`
       printf(" %12.10e",creal(D[j*Nlevel+j]));
       tr+=creal(D[j*Nlevel+j]);
     }
+    
     printf("\n #Trace is %12.10e",tr);
-    dipole_moment = TrMuD(Nlevel, Mu, D);
+    */
+
     dipole[i] = dipole_moment;
     fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_moment),cimag(dipole_moment));
+  
+    dipoleMG[i] = dipole_momentMG;
+    fprintf(dfpMG,"%f %12.10e %12.10e\n",dt*i,creal(dipole_momentMG),cimag(dipole_momentMG));
+
   }
+exit(0);
 
   for (int i=numTime; i<zeropad; i++) {
 
@@ -150,7 +210,7 @@ int main() {
   return 0;
 }
 
- FILE *EfpMG, *mufpMG, *disfpMG;
+/* FILE *EfpMG, *mufpMG, *disfpMG;
 
   // Open each file for reading
   EfpMG = fopen("Energy.txt","r");
@@ -207,12 +267,7 @@ int main() {
     dipoleMG[i] = 0. + 0.*I;
 
   }
-
-  Fourier(dipole, numTime+zeropad, dt);
-
-  fclose(dfp);
-  return 0;
- 
+*/
 
 void PrintRealMatrix(int dim, double *M) {
 
@@ -244,7 +299,7 @@ void PrintComplexMatrix(int dim, double complex *M) {
   }
   printf("\n");
 }
-void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Dis, double complex *D, double dt) {
+void RK3(int Nlevel, double time, double *bas, double *E, double *Hint, double *Mu, double *Dis, double complex *D, double dt) {
 
   int i, j;
   double complex *D_dot, *D2, *D3, *D_np1, *k1, *k2, *k3;
@@ -287,7 +342,7 @@ void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Di
   for (i=0; i<dim; i++) {
 
 
-      H[i] = E[i] + Efield*Mu[i]; // - I*Dis[i];
+      H[i] = E[i] + Hint[i] - Efield*Mu[i]; // - I*Dis[i];
 
   } 
 
@@ -315,7 +370,7 @@ void RK3(int Nlevel, double time, double *bas, double *E, double *Mu, double *Di
   // Compute full Hamiltonian at partially updated time t 
   for (i=0; i<dim; i++) {
 
-      H[i] = E[i] + Efield*Mu[i]; // - I*Dis[i];
+      H[i] = E[i] + Hint[i] - Efield*Mu[i]; // - I*Dis[i];
 
   }
 
@@ -531,36 +586,38 @@ double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
 
 }
 
-<<<<<<< HEAD:CoupledDensityMatrix.c
 
 void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) {
   
   int i; 
-  double *tmp1, *tmp2;
+ // double *tmp1, *tmp2;
   double oer2, oer3, RdMu;
  
   oer2 = pow(R,-2);
   oer3 = pow(R,-3);
   
-  tmp1 = (double *)malloc(dim*dim*sizeof(double));
-  tmp2 = (double *)malloc(dim*dim*sizeof(double));
+ // tmp1 = (double *)malloc(dim*dim*sizeof(double));
+ // tmp2 = (double *)malloc(dim*dim*sizeof(double));
 
   // Write code between here!
  
  for (i=0; i<dim*dim; i++){
 
- tmp1[i] = dpm*mu[i];
- tmp2[i] = R*mu[i];
+// tmp1[i] = dpm*mu[i];
+// tmp2[i] = R*mu[i];
 
- Hint[i] = oer3*(tmp1[i]-tmp2[i]*R*dpm*oer2); 
+ Hint[i] = oer3*(dpm*mu[i]-R*mu[i]*R*dpm*oer2); 
 } 
 
  
 
   // And Here!
-  free(tmp1);
-  free(tmp2); 
-=======
+ // free(tmp1);
+ // free(tmp2); 
+
+}
+
+/*
 double complex Hint(int Nlevel, double complex *D, double *MU, double complex *DMG, double *MuMG, double R);
 
 double R = 1.;
@@ -584,4 +641,4 @@ int i,j,k;
 return Hint;
 >>>>>>> e3139d15afb7b1d9f8da477d76fc482fcb4c356f:DensityMatrix.c
 
-}
+} */
