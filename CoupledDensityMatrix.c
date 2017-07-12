@@ -13,7 +13,7 @@ void PrintComplexMatrix(int dim, double complex *M);
 void PrintRealMatrix(int dim, double *M);
 void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM);
 void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double complex *P);
-void Fourier (double complex *dm, int n, double dt);
+void Fourier (double complex *dm, int n, double dt, double complex *ftout, double *freqvec);
 void TrMuMol (int dim, double complex *H, double complex *D, double *Mu);
 double E_Field(double time);
 double complex TrMuD(int Nlevel, double *Mu, double complex *D);
@@ -38,10 +38,11 @@ int main() {
   int zeropad = 100000;
   int dim = Nlevel*Nlevel;  
   double *E, *Mu, *Dis, *bas, *Hint;
-  double complex *H, *D, *P, *dipole;
+  double complex *H, *D, *P, *dipole, *efield;
   double dt = 0.01;
 
   dipole = (double complex *)malloc((numTime+zeropad)*sizeof(double complex));
+  efield = (double complex *)malloc((numTime+zeropad)*sizeof(double complex));
   H = (double complex*)malloc(dim*sizeof(double complex));
   D = (double complex *)malloc(dim*sizeof(double complex));
   P = (double complex *)malloc(dim*sizeof(double complex));
@@ -68,32 +69,46 @@ int main() {
   basMG = (double *)malloc(dim*sizeof(double));
   HintMG = (double *)malloc(dim*sizeof(double));
   
+
+
   // Initialize Denistry matrix as a superposition state of energy eigenstate 1 and energy eigenstate 2
   // Density matrix element D(i,j) is accessed as D[i*Nlevel+j];
   D[0] = 1. + 0.*I;
   DMG[0] = 1. + 0.*I;
-   for (int i=1; i<dim; i++){
- D[i] = 0. + 0.*I;
- DMG[i] = 0. + 0.*I;
+  for (int i=1; i<dim; i++){
+
+    D[i] = 0. + 0.*I;
+    DMG[i] = 0. + 0.*I;
   
-}
+  }
 
   // BUILD DM BASIS
   for (int i=0; i<Nlevel; i++) {
     for (int j=0; j<Nlevel; j++) {
 
       if (i==j){
- bas[i*Nlevel+j] = 1.0;
- basMG[i*Nlevel+j] = 1.0;
-}     
+ 
+        bas[i*Nlevel+j] = 1.0;
+        basMG[i*Nlevel+j] = 1.0;
+
+      }     
       else{
- bas[i*Nlevel+j] = 0.;
- basMG[i*Nlevel+j] = 0.;
+
+        bas[i*Nlevel+j] = 0.;
+        basMG[i*Nlevel+j] = 0.;
+      }
     }
   }
-}
 
   // Variable that is a file pointer for each data file:
+  /*char *Efn, *Mufn, *Disfn, *EMGfn, *MuMGfn, *DisMGfn;
+  Efn = (char *)malloc(1000*sizeof(char));
+  Mufn = (char *)malloc(1000*sizeof(char));
+  Disfn = (char *)malloc(1000*sizeof(char));
+  EMGfn = (char *)malloc(1000*sizeof(char));
+  MuMGfn = (char *)malloc(1000*sizeof(char));
+  DisMGfn = (char *)malloc(1000*sizeof(char));
+  */
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
@@ -195,17 +210,49 @@ RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
     dipoleMG[i] = dipole_momentMG;
     fprintf(dfpMG,"%f %12.10e %12.10e\n",dt*i,creal(dipole_momentMG),cimag(dipole_momentMG));
 
+    efield[i] = E_Field(dt*i) + 0.*I;
   }
-exit(0);
 
   for (int i=numTime; i<zeropad; i++) {
 
     dipole[i] = 0. + 0.*I;
-
+    dipoleMG[i] = 0. + 0.*I;
+    efield[i] = 0. + 0.*I;
   }
 
-  Fourier(dipole, numTime+zeropad, dt);
+  // double complex *ftout, double *freqvec
+  double complex *NPSpectrum, *MGSpectrum, *LaserSpectrum;
+  double *EV;
+  // Currently FT over 500 different energies, hence the arrays for the various spectra
+  // need to have length 500... will make them longer for good measure
+  NPSpectrum = (double complex *)malloc(1000*sizeof(double complex));
+  MGSpectrum = (double complex *)malloc(1000*sizeof(double complex));
+  LaserSpectrum = (double complex *)malloc(1000*sizeof(double complex));
+  EV = (double *)malloc(1000*sizeof(double));
 
+  // Now calculate the spectra
+  Fourier(dipole, numTime+zeropad, dt, NPSpectrum, EV);
+  Fourier(dipoleMG, numTime+zeropad, dt, MGSpectrum, EV);
+  Fourier(efield, numTime+zeropad, dt, LaserSpectrum, EV);
+
+  FILE *absfp; 
+  absfp = fopen("AbsorptionSpectrum.txt","w");
+  fprintf(absfp, "#  Energy (ev)    Absorption NP      Absorption MG\n");
+  for (int i=0; i<500; i++) {
+
+    double eev = EV[i];
+    double omega = eev/6.5821e-16;
+    double k = omega/299792458.;
+    double pre = k/8.854187e-12; 
+    double complex alphaNP = NPSpectrum[i]/LaserSpectrum[i];
+    double complex alphaMG = MGSpectrum[i]/LaserSpectrum[i];
+    double sig_NP = pre*cimag(alphaNP);
+    double sig_MG = pre*cimag(alphaMG);
+
+    fprintf(absfp, "  %12.10e  %12.10e  %12.10e\n",EV[i],sig_NP, sig_MG);
+  }
+
+  fclose(absfp);
   fclose(dfp);
   return 0;
 }
@@ -542,9 +589,9 @@ void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double co
  free(LD);
 }
 
-void Fourier (double complex *dm, int n, double dt){
-  FILE *fp;
-  fp = fopen("Absorption_SpectrumAu.txt","w");
+void Fourier(double complex *dm, int n, double dt, double complex *ftout, double *freqvec){
+  //FILE *fp;
+  //fp = fopen("Absorption_SpectrumAu.txt","w");
   double wmin=0.5*0.07;
   double wmax=2*0.07;
   int maxk = 500;
@@ -560,11 +607,14 @@ void Fourier (double complex *dm, int n, double dt){
       time = dt*t;
       double angle = time*w;
       sumreal += creal(dm[t]) * cos(angle) + 0. * sin(angle);
-      sumimag  += -creal(dm[t]) * sin(angle) + 0. * cos(angle);
+      sumimag  += creal(dm[t]) * sin(angle) + 0. * cos(angle);
     }
-    fprintf(fp," %12.10e  %12.10e\n",w*(27.2114),sumreal*sumreal+sumimag*sumimag);
+    ftout[k] = sumreal + sumimag*I;
+    // Energy in eV
+    freqvec[k] = w*27.2114;
+    //fprintf(fp," %12.10e  %12.10e\n",w*(27.2114),sumreal*sumreal+sumimag*sumimag);
   }
-  fclose(fp);
+  //fclose(fp);
 }
 
 double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
@@ -591,54 +641,19 @@ void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) {
   
   int i; 
  // double *tmp1, *tmp2;
-  double oer2, oer3, RdMu;
+  double oer2, oer3;
  
-  oer2 = pow(R,-2);
-  oer3 = pow(R,-3);
+  oer2 = pow(R,-2.);
+  oer3 = pow(R,-3.);
   
- // tmp1 = (double *)malloc(dim*dim*sizeof(double));
- // tmp2 = (double *)malloc(dim*dim*sizeof(double));
 
   // Write code between here!
  
  for (i=0; i<dim*dim; i++){
 
-// tmp1[i] = dpm*mu[i];
-// tmp2[i] = R*mu[i];
+   Hint[i] = oer3*(dpm*mu[i]-R*mu[i]*R*dpm*oer2); 
 
- Hint[i] = oer3*(dpm*mu[i]-R*mu[i]*R*dpm*oer2); 
-} 
-
- 
-
-  // And Here!
- // free(tmp1);
- // free(tmp2); 
+ } 
 
 }
 
-/*
-double complex Hint(int Nlevel, double complex *D, double *MU, double complex *DMG, double *MuMG, double R);
-
-double R = 1.;
-double complex TrMumol = 0. + 0.*I;
-double complex TrMuNp = 0. + 0.*I;
-
-
-int i,j,k;
- for (int i=0; i<Nlevel; i++){
-
-     for (int j=0, j<Nlevel; j++){
-
-      for (int k=0, k<Nlevel; k++){
-
-  sum += (1/R^3)*(MuNp*MuMol- ((MuNp*R)(R*MuMol)/R^2))
-
-}
-  Hint += sum;
-}
-
-return Hint;
->>>>>>> e3139d15afb7b1d9f8da477d76fc482fcb4c356f:DensityMatrix.c
-
-} */
