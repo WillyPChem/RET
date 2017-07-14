@@ -19,7 +19,7 @@ double E_Field(double time);
 double complex TrMuD(int Nlevel, double *Mu, double complex *D);
 
 // Function prototype for H_interaction
-void H_interaction(int dim, double *Hint, double *mu, double dpm, double R);
+void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R);
 
 
 // NOTE!!!  You need three global variables for the rates associated with 
@@ -176,7 +176,13 @@ int main() {
   dipole_moment = TrMuD(Nlevel, Mu, D);
   dipole_momentMG = TrMuD(Nlevel, MuMG, DMG);
 
-  double r = 15.;
+  // Treating r as a vector... molecule and nanoparticle are separated along the x-axis but their center of masses lie
+  // on the same y- and z- coordinates
+  double *r;
+  r = (double *)malloc(3*sizeof(double));
+  r[0] = 0.;
+  r[1] = 0.;
+  r[2] = 20.;
    
   //void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) 
   H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
@@ -595,25 +601,23 @@ double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
 }
 
 
-void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) {
+void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R) {
   
   int i; 
  // double *tmp1, *tmp2;
   double oer2, oer3;
+  double scal_R = sqrt(R[0]*R[0] + R[1]*R[1] + R[2]*R[2]);
  
-  oer2 = pow(R,-2.);
-  oer3 = pow(R,-3.);
+  oer2 = pow(scal_R,-2.);
+  oer3 = pow(scal_R,-3.);
  
   // Write code between here!
  
  for (i=0; i<dim*dim; i++){
 
-   // Very important!  The second terms, R dot Mu and <mu> dot R are zero
-   //                  in this case because the only non-zero component of the
-   //                  dipole terms are the z-terms, but the systems are assumed
-   //                  to be displaced only along x (so that the dipole moments are parallel to 
-   //                  each other)... hence R dot mu is zero 
-   Hint[i] = oer3*dpm*mu[i]; //-R*mu[i]*R*dpm*oer2);
+   // Very important!  Currently assuming z-polarized light, so only the <mu>_z and mu_z terms
+   //                  are non-zero, hence we consider only R[2]*mu and <mu>*R[2] 
+   Hint[i] = oer3*(dpm*mu[i] -3*R[2]*mu[i]*R[2]*dpm*oer2);
  } 
 
 }
