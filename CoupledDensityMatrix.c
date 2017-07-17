@@ -1,8 +1,7 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
-
-#include</usr/include/malloc/malloc.h>
+#include</usr/include/malloc.h>
 #include</usr/include/complex.h>
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
@@ -173,8 +172,8 @@ int main() {
   double r = 10.;
    
   //void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) 
-  H_interaction(Nlevel, Hint, Mu, dipole_momentMG, r); 
-  H_interaction(Nlevel, HintMG, MuMG, dipole_moment, r);
+  H_interaction(Nlevel, Hint, Mu,creal(dipole_momentMG), r); 
+  H_interaction(Nlevel, HintMG, MuMG, creal(dipole_moment), r);
  
  for (int i=1; i<numTime; i++) {
 
@@ -184,13 +183,13 @@ RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
     
     dipole_moment = TrMuD(Nlevel, Mu, D); 
     
-    H_interaction(Nlevel, HintMG, MuMG, dipole_moment, r);
+    H_interaction(Nlevel, HintMG, MuMG, creal(dipole_moment), r);
     
     RK3(Nlevel, dt*i, basMG, EMG, HintMG, MuMG, DisMG, DMG, dt);
     
     dipole_momentMG = TrMuD(Nlevel, MuMG, DMG);
     
-    H_interaction(Nlevel, Hint, Mu, dipole_momentMG, r); 
+    H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
    
 
  /*printf("\n %f ",dt*i);
