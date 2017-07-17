@@ -1,8 +1,14 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
+<<<<<<< HEAD
 #include</usr/include/malloc.h>
 #include</usr/include/complex.h>
+=======
+
+#include<malloc.h>
+#include<complex.h>
+>>>>>>> 04bdc230fcb6189a5f4c24ff73c891c778901f49
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 void RK3(int Nlevel, double time, double *bas, double *E, double *Hint, double *Mu, double *Dis, double complex *D, double dt);
@@ -18,7 +24,7 @@ double E_Field(double time);
 double complex TrMuD(int Nlevel, double *Mu, double complex *D);
 
 // Function prototype for H_interaction
-void H_interaction(int dim, double *Hint, double *mu, double dpm, double R);
+void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R);
 
 
 // NOTE!!!  You need three global variables for the rates associated with 
@@ -38,7 +44,7 @@ int main() {
   int dim = Nlevel*Nlevel;  
   double *E, *Mu, *Dis, *bas, *Hint;
   double complex *H, *D, *P, *dipole, *efield;
-  double dt = 0.01;
+  double dt = 0.005;
 
   dipole = (double complex *)malloc((numTime+zeropad)*sizeof(double complex));
   efield = (double complex *)malloc((numTime+zeropad)*sizeof(double complex));
@@ -160,26 +166,42 @@ int main() {
   PrintRealMatrix(Nlevel, DisMG);
 
 
-  double tr=0.;
+  double tr, trMG;
   double complex dipole_moment, dipole_momentMG;
   FILE *dfp, *dfpMG;
-  dfp = fopen("DipoleMoment.txt","w");
-  dfpMG = fopen("DipoleMomentMG.txt", "w");
+  FILE *popfp, *popMGfp;
+
+  // Uncomment if you want to print the dipole moment data (also uncomment print statements in for loop!)
+  //dfp = fopen("DipoleMoment.txt","w");
+  //dfpMG = fopen("DipoleMomentMG.txt", "w");
+  popfp = fopen("Population.txt","w");
+  popMGfp = fopen("PopulationMG.txt","w");
+
 
   dipole_moment = TrMuD(Nlevel, Mu, D);
   dipole_momentMG = TrMuD(Nlevel, MuMG, DMG);
 
-  double r = 10.;
+  // Treating r as a vector... molecule and nanoparticle are separated along the x-axis but their center of masses lie
+  // on the same y- and z- coordinates
+  double *r;
+  r = (double *)malloc(3*sizeof(double));
+  r[0] = 0.;
+  r[1] = 0.;
+  r[2] = 20.;
    
   //void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) 
+<<<<<<< HEAD
   H_interaction(Nlevel, Hint, Mu,creal(dipole_momentMG), r); 
+=======
+  H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
+>>>>>>> 04bdc230fcb6189a5f4c24ff73c891c778901f49
   H_interaction(Nlevel, HintMG, MuMG, creal(dipole_moment), r);
  
  for (int i=1; i<numTime; i++) {
 
     // Calculate Hint now!
     
-RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
+    RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
     
     dipole_moment = TrMuD(Nlevel, Mu, D); 
     
@@ -192,22 +214,30 @@ RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
     H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
    
 
- /*printf("\n %f ",dt*i);
-   tr=0.;
+    fprintf(popfp,"\n %f ",dt*i);
+    fprintf(popMGfp,"\n %f ",dt*i);
+    tr=0.;
+    trMG = 0.;
     for (int j=0; j<Nlevel; j++) {
-`
-      printf(" %12.10e",creal(D[j*Nlevel+j]));
+
+      fprintf(popfp," %12.10e",creal(D[j*Nlevel+j]));
+      fprintf(popMGfp,"  %12.10e",creal(DMG[j*Nlevel+j]));
+
       tr+=creal(D[j*Nlevel+j]);
+      trMG+=creal(DMG[j*Nlevel+j]);
+
     }
     
-    printf("\n #Trace is %12.10e",tr);
-    */
+    fprintf(popfp," %12.10e",tr);
+    fprintf(popMGfp," %12.10e",trMG);
 
     dipole[i] = dipole_moment;
-    fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_moment),cimag(dipole_moment));
+    // Uncomment if you want a file with dipole moment data in it for the nanoparticle
+    //fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_moment),cimag(dipole_moment));
   
     dipoleMG[i] = dipole_momentMG;
-    fprintf(dfpMG,"%f %12.10e %12.10e\n",dt*i,creal(dipole_momentMG),cimag(dipole_momentMG));
+    // Uncomment if you want a file with dipole moment data in it for molecule
+    //fprintf(dfpMG,"%f %12.10e %12.10e\n",dt*i,creal(dipole_momentMG),cimag(dipole_momentMG));
 
     efield[i] = E_Field(dt*i) + 0.*I;
   }
@@ -241,79 +271,23 @@ RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
 
     double eev = EV[i];
     double omega = eev/6.5821e-16;
-    double k = omega/299792458.;
+    double k = omega/2.99792458e+14;
     double pre = k/8.854187e-12; 
     double complex alphaNP = NPSpectrum[i]/LaserSpectrum[i];
     double complex alphaMG = MGSpectrum[i]/LaserSpectrum[i];
     double sig_NP = pre*cimag(alphaNP);
     double sig_MG = pre*cimag(alphaMG);
 
+    // Going to print absorption cross section in abs/micron^2
     fprintf(absfp, "  %12.10e  %12.10e  %12.10e\n",EV[i],sig_NP, sig_MG);
   }
 
   fclose(absfp);
-  fclose(dfp);
+
+  //fclose(dfp);
   return 0;
 }
 
-/* FILE *EfpMG, *mufpMG, *disfpMG;
-
-  // Open each file for reading
-  EfpMG = fopen("Energy.txt","r");
-  mufpMG = fopen("Dipole.txt","r");
-  disfpMG = fopen("Dissipation.txt","r");
-
- double val;
-  for (int i=0; i<dim; i++) {
-
-
-       // Read from energy file and store to the energy matrix
-       fscanf(Efp,"%lf",&val);
-       EMG[i] = val;
-
-       fscanf(mufp,"%lf",&val);
-       MuMG[i] = val;
-
-       fscanf(disfp,"%lf",&val);
-       DisMG[i] = val;
-
-  }
-
-  printf("\nE\n");
-  PrintRealMatrix(Nlevel, EMG);
-  printf("\nMu\n");
-  PrintRealMatrix(Nlevel,MuMG);
-  printf("\nDiss\n");
-  PrintRealMatrix(Nlevel,DisMG);
-
-  double tr=0.;
-  double complex dipole_momentMG;
-  FILE *dfp;
-  dfp = fopen("DipoleMomentMG.txt","w");
-
-  dipoleMG[0] = TrMuD(Nlevel, MuMG, D);
-  for (int i=1; i<numTime; i++) {
-
-    RK3(Nlevel, dt*i, basMG, EMG, MuMG, DisMG, DMG, dt);
-
-    printf("\n %f ",dt*i);
-    tr=0.;
-    for (int j=0; j<Nlevel; j++) {
-
-      printf(" %12.10e",creal(D[j*Nlevel+j]));
-      tr+=creal(D[j*Nlevel+j]);
-    }
-    printf("\n #Trace is %12.10e",tr);
-    dipole_momentMG = TrMuDMG(Nlevel, MuMG, DMG);
-    dipoleMG[i] = dipole_momentMG;
-    fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_momentMG),cimag(dipole_momentMG));
-  }
-  for (int i=numTime; i<zeropad; i++) {
-
-    dipoleMG[i] = 0. + 0.*I;
-
-  }
-*/
 
 void PrintRealMatrix(int dim, double *M) {
 
@@ -636,22 +610,23 @@ double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
 }
 
 
-void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) {
+void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R) {
   
   int i; 
  // double *tmp1, *tmp2;
   double oer2, oer3;
+  double scal_R = sqrt(R[0]*R[0] + R[1]*R[1] + R[2]*R[2]);
  
-  oer2 = pow(R,-2.);
-  oer3 = pow(R,-3.);
-  
-
+  oer2 = pow(scal_R,-2.);
+  oer3 = pow(scal_R,-3.);
+ 
   // Write code between here!
  
  for (i=0; i<dim*dim; i++){
 
-   Hint[i] = oer3*(dpm*mu[i]-R*mu[i]*R*dpm*oer2); 
-
+   // Very important!  Currently assuming z-polarized light, so only the <mu>_z and mu_z terms
+   //                  are non-zero, hence we consider only R[2]*mu and <mu>*R[2] 
+   Hint[i] = oer3*(dpm*mu[i] -3*R[2]*mu[i]*R[2]*dpm*oer2);
  } 
 
 }
