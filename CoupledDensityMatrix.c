@@ -1,14 +1,11 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
-<<<<<<< HEAD
 #include</usr/include/malloc.h>
 #include</usr/include/complex.h>
-=======
 
 #include<malloc.h>
 #include<complex.h>
->>>>>>> 04bdc230fcb6189a5f4c24ff73c891c778901f49
 
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 void RK3(int Nlevel, double time, double *bas, double *E, double *Hint, double *Mu, double *Dis, double complex *D, double dt);
@@ -190,11 +187,8 @@ int main() {
   r[2] = 20.;
    
   //void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) 
-<<<<<<< HEAD
   H_interaction(Nlevel, Hint, Mu,creal(dipole_momentMG), r); 
-=======
   H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
->>>>>>> 04bdc230fcb6189a5f4c24ff73c891c778901f49
   H_interaction(Nlevel, HintMG, MuMG, creal(dipole_moment), r);
  
  for (int i=1; i<numTime; i++) {
