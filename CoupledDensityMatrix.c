@@ -182,9 +182,9 @@ int main() {
   // on the same y- and z- coordinates
   double *r;
   r = (double *)malloc(3*sizeof(double));
-  r[0] = 0.;
+  r[0] = 20.;
   r[1] = 0.;
-  r[2] = 20.;
+  r[2] = 0.;
    
   //void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) 
   H_interaction(Nlevel, Hint, Mu,creal(dipole_momentMG), r); 
