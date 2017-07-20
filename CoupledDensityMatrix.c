@@ -1,9 +1,11 @@
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
-#include</usr/include/malloc.h>
-#include</usr/include/complex.h>
+// Uncomment if on Mac
+//#include</usr/include/malloc.h>
+//#include</usr/include/complex.h>
 
+// Uncomment if on Linux
 #include<malloc.h>
 #include<complex.h>
 
