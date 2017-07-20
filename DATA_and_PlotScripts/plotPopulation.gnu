@@ -1,4 +1,4 @@
-#!/Users/jay/gnuplot/bin/gnuplot
+#!/usr/bin/gnuplot
 
 set terminal postscript enhanced color 'Helvetica' 30
 set output 'PopulationMG.eps'
