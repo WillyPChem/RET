@@ -259,6 +259,7 @@ int main() {
   Fourier(efield, numTime+zeropad, dt, LaserSpectrum, EV);
 
   FILE *absfp; 
+  // Calculating the extinction cross section now
   absfp = fopen("AbsorptionSpectrum.txt","w");
   fprintf(absfp, "#  Energy (ev)    Absorption NP      Absorption MG\n");
   for (int i=0; i<500; i++) {
@@ -266,11 +267,11 @@ int main() {
     double eev = EV[i];
     double omega = eev/6.5821e-16;
     double k = omega/2.99792458e+14;
-    double pre = k/8.854187e-12; 
+    double pre = k*k*k*k/(6*pi*8.854187e-12*8.854187e-12); 
     double complex alphaNP = NPSpectrum[i]/LaserSpectrum[i];
     double complex alphaMG = MGSpectrum[i]/LaserSpectrum[i];
-    double sig_NP = pre*cimag(alphaNP);
-    double sig_MG = pre*cimag(alphaMG);
+    double sig_NP = pre*creal(alphaNP*conj(alphaNP));
+    double sig_MG = pre*creal(alphaMG*conj(alphaMG));
 
     // Going to print absorption cross section in abs/micron^2
     fprintf(absfp, "  %12.10e  %12.10e  %12.10e\n",EV[i],sig_NP, sig_MG);
@@ -573,8 +574,11 @@ void Fourier(double complex *dm, int n, double dt, double complex *ftout, double
     for (int t = 0; t < n; t++){
       time = dt*t;
       double angle = time*w;
-      sumreal += creal(dm[t]) * cos(angle) + 0. * sin(angle);
-      sumimag  += creal(dm[t]) * sin(angle) + 0. * cos(angle);
+      sumreal += creal(cexp(I*angle)*dm[t])*dt;
+      sumimag += cimag(cexp(I*angle)*dm[t])*dt;
+      
+      //sumreal += creal(dm[t]) * cos(angle) + 0. * sin(angle);
+      //sumimag  += creal(dm[t]) * sin(angle) + 0. * cos(angle);
     }
     ftout[k] = sumreal + sumimag*I;
     // Energy in eV
