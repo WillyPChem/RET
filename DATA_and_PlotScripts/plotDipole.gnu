@@ -1,4 +1,4 @@
-#!/Users/jay/gnuplot/bin/gnuplot
+#!/usr/bin/gnuplot
 
 set terminal postscript enhanced color 'Helvetica' 35
 set output 'DipoleA.eps'
