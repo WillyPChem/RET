@@ -563,7 +563,7 @@ void Fourier(double complex *dm, int n, double dt, double complex *ftout, double
   //FILE *fp;
   //fp = fopen("Absorption_SpectrumAu.txt","w");
   double wmin=0.5*0.07;
-  double wmax=2*0.07;
+  double wmax=4.*0.07;
   int maxk = 500;
   double dw = (wmax-wmin)/maxk;
   double time;
