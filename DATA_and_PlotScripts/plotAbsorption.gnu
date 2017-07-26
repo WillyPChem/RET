@@ -3,17 +3,17 @@
 set terminal postscript enhanced color 'Helvetica' 30
 set output 'AbsorptionMG.eps'
 set xlabel 'Wavelength (nm)'
-a = 8.2e29
+a = 1
 set pointsize 2
-set yrange [0:3.2]
-set xrange [400:800]
+#set yrange [0:3.2]
+set xrange [200:800]
 set ylabel 'Extinction Cross Section'
-plot 'DATA/TRIALA/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'A', \
-'DATA/TRIALB/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'B', \
-'DATA/TRIALC/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'C', \
-'DATA/TRIALD/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'D', \
-'DATA/TRIALE/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'E', \
-'DATA/TRIALF/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'F', \
-'DATA/TRIALG/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'G', \
-'DATA/TRIALH/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w l lw 7 title 'H', \
-'DATA/TRIALI/AbsorptionSpectrum.txt' u (1240/$1):($3/a) w lp lw 7 pointinterval 5 title 'I'
+plot '../Emol_300nm_Abs_1.txt' u (1240/$1):($3/a) w l lw 2 title '1', \
+'../Emol_300nm_Abs_2.txt' u (1240/$1):($3/a) w l lw 2 title '2', \
+'../Emol_300nm_Abs_3.txt' u (1240/$1):($3/a) w l lw 2 title '3', \
+'../Emol_300nm_Abs_4.txt' u (1240/$1):($3/a) w l lw 2 title '4', \
+'../Emol_300nm_Abs_5.txt' u (1240/$1):($3/a) w l lw 2 title '5', \
+'../Emol_300nm_Abs_6.txt' u (1240/$1):($3/a) w l lw 2 title '6', \
+'../Emol_300nm_Abs_7.txt' u (1240/$1):($3/a) w l lw 2 title '7', \
+'../Emol_300nm_Abs_8.txt' u (1240/$1):($3/a) w l lw 2 title '8', \
+'../Emol_300nm_Abs_9.txt' u (1240/$1):($3/a) w l lw 2 dt 2 title '9'
