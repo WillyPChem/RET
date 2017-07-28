@@ -3,17 +3,17 @@
 set terminal postscript enhanced color 'Helvetica' 30
 set output 'PopulationMG.eps'
 set xlabel 'Time (femtoseconds)'
-a = 8e29
+a = 1
 set xrange [0:20]
 set pointsize 2
 #set yrange [0:($1*0.02418)]
 set ylabel 'Population'
-plot 'DATA/TRIALA/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'A', \
-'DATA/TRIALB/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'B', \
-'DATA/TRIALC/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'C', \
-'DATA/TRIALD/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'D', \
-'DATA/TRIALE/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'E', \
-'DATA/TRIALF/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'F', \
-'DATA/TRIALG/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'G', \
-'DATA/TRIALH/PopulationMG.txt' u ($1*0.02418):3 w l lw 7 title 'H', \
-'DATA/TRIALI/PopulationMG.txt' u ($1*0.02418):3 w l lt 0 lw 7 title 'I'
+plot '../Emol_300nm_MGPop_1.txt' u ($1*0.02418):3 w l lw 2 title '1', \
+'../Emol_300nm_MGPop_2.txt' u ($1*0.02418):3 w l lw 2 title '2', \
+'../Emol_300nm_MGPop_3.txt' u ($1*0.02418):3 w l lw 2 title '3', \
+'../Emol_300nm_MGPop_4.txt' u ($1*0.02418):3 w l lw 2 title '4', \
+'../Emol_300nm_MGPop_5.txt' u ($1*0.02418):3 w l lw 2 title '5', \
+'../Emol_300nm_MGPop_6.txt' u ($1*0.02418):3 w l lw 2 title '6', \
+'../Emol_300nm_MGPop_7.txt' u ($1*0.02418):3 w l lw 2 title '7', \
+'../Emol_300nm_MGPop_8.txt' u ($1*0.02418):3 w l lw 2 title '8', \
+'../Emol_300nm_MGPop_9.txt' u ($1*0.02418):3 w l lt 0 lw 2 title '9'
