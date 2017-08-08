@@ -1,11 +1,11 @@
-#include <fftw3.h>
 #include<math.h>
 #include<stdio.h>
+#include<stdlib.h>
 #include<malloc.h>
 #include<complex.h>
+#include<fftw3.h>
 
-#define REAL 0
-#define IMAG 1
+
 //void Commutator (int dim, double H[dim][dim], double D[dim][dim], double P[dim][dim]);
 void RK3(int Nlevel, double time, double *bas, double *E, double *Hint, double *Mu, double *Dis, double complex *D, double dt);
 void Liouville(int dim, double complex *H, double complex *D, double complex *P);
@@ -15,9 +15,9 @@ void PrintRealMatrix(int dim, double *M);
 void FormDM(int dim, double complex *C, double complex *Ct, double complex *DM);
 void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double complex *P);
 void Fourier (double complex *dm, int n, double dt, double complex *ftout, double *freqvec);
-double complex TrMuD(int Nlevel, double *Mu, double complex *D);
+void TrMuMol (int dim, double complex *H, double complex *D, double *Mu);
 double E_Field(double time);
-void FillDFTArray(int fftw_iter, double real_val, double imag_val, fftw_complex* ar);
+double complex TrMuD(int Nlevel, double *Mu, double complex *D);
 
 // Function prototype for H_interaction
 void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R);
@@ -48,52 +48,23 @@ int main() {
   printf("  How many states are in your NP system? \n");
   scanf("%i",&Nlevel);
   dim = Nlevel*Nlevel;
+
   // MG variables here!
   int NlevelMG = 3;
   int dimMG = NlevelMG*NlevelMG;
   double *EMG, *MuMG, *MuZERO, *DisMG, *basMG, *HintMG;
   double complex *HMG, *DMG, *PMG;
 
-  int dft_dim = numTime+zeropad;
-  // FFTW variables here -> inputs to fft
+
+  // FFTW variables here!
   fftw_complex *dipole;
   fftw_complex *efield;
   fftw_complex *dipoleMG;
-  fftw_complex *nps;
-  fftw_complex *mgs;
-  fftw_complex *efs;
 
   // Allocate memory for FFTW arrays
-  dipole = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
-  efield = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
-  dipoleMG = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
-  nps = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
-  mgs = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
-  efs = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
-
-  printf("  just declared bunch of arrays! \n");
-  fflush(stdout);
-  fftw_plan npp = fftw_plan_dft_1d(dft_dim,
-                                      dipole,
-                                      nps,
-                                      FFTW_BACKWARD,
-                                      FFTW_ESTIMATE);
-
-  fftw_plan mgp = fftw_plan_dft_1d(dft_dim,
-                                      dipoleMG,
-                                      mgs,
-                                      FFTW_BACKWARD,
-                                      FFTW_ESTIMATE);
-
-
-  fftw_plan efp = fftw_plan_dft_1d(dft_dim,
-                                      efield,
-                                      efs,
-                                      FFTW_BACKWARD,
-                                      FFTW_ESTIMATE);
-
-  printf("  STILL GOOD AFTER FFTW PLANS\n");
-  fflush(stdout);
+  dipole = (fftw_complex*)malloc((numTime+zeropad)*sizeof(fftw_complex));
+  efield = (fftw_complex*)malloc((numTime+zeropad)*sizeof(fftw_complex));
+  dipoleMG = (fftw_complex*)malloc((numTime+zeropad)*sizeof(fftw_complex));
 
   // Allocate memory for all other arrays
   // NP
@@ -116,8 +87,6 @@ int main() {
   basMG = (double *)malloc(dimMG*sizeof(double));
   HintMG = (double *)malloc(dimMG*sizeof(double));
 
-  printf("  STILL GOOD AFTER MALLOCS\n");
-  fflush(stdout);
   // Variables for instantaneous quantities  
   double tr, trMG;
   double complex dipole_moment, dipole_momentMG;
@@ -129,7 +98,7 @@ int main() {
   r = (double *)malloc(3*sizeof(double));
   r[0] = 0.;
   r[1] = 0.;
-  r[2] = 100.;
+  r[2] = 2000000.;
 
 
   // Files for stuff:
@@ -145,16 +114,15 @@ int main() {
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
-  Efp = fopen("Matrices/SMA_PEAK1/Energy5s.txt","r");
-  Mufp = fopen("Matrices/SMA_PEAK1/Dipole5s.txt","r");
-  Disfp = fopen("Matrices/SMA_PEAK1/Dissipation5s.txt","r");
+  Efp = fopen("Matrices/PRB_JPCC/EnergyAu.txt","r");
+  Mufp = fopen("Matrices/PRB_JPCC/DipoleAu.txt","r");
+  Disfp = fopen("Matrices/PRB_JPCC/DissipationAu.txt","r");
 
-  EfpMG = fopen("Matrices/SMA_PEAK1/Energy.txt","r");
-  MufpMG = fopen("Matrices/SMA_PEAK1/Dipole.txt","r");
-  DisfpMG = fopen("Matrices/SMA_PEAK1/Dissipation.txt","r");
+  EfpMG = fopen("Matrices/PRB_JPCC/Energy.txt","r");
+  MufpMG = fopen("Matrices/PRB_JPCC/Dipole.txt","r");
+  DisfpMG = fopen("Matrices/PRB_JPCC/Dissipation.txt","r");
 
-  printf("  STILL GOOD AFTER MATRICES READS\n");
-  fflush(stdout);
+
   // Density matrix element D(i,j) is accessed as D[i*Nlevel+j];
   D[0] = 1. + 0.*I;
   DMG[0] = 1. + 0.*I;
@@ -183,10 +151,10 @@ int main() {
   for (int i=0; i<NlevelMG; i++) {
     for (int j=0; j<NlevelMG; j++) {
       if (i==j){
-        basMG[i*NlevelMG+j] = 1.0;
+        basMG[i*Nlevel+j] = 1.0;
       }
       else{
-        basMG[i*NlevelMG+j] = 0.;
+        basMG[i*Nlevel+j] = 0.;
       }
     }
   }
@@ -229,10 +197,6 @@ int main() {
   PrintRealMatrix(Nlevel,Mu);
   printf("\nDis\n");
   PrintRealMatrix(Nlevel,Dis);
-  printf("\nBas\n");
-  PrintRealMatrix(Nlevel,bas);
-  printf("\nDM\n");
-  PrintComplexMatrix(Nlevel,D);
 
   printf("\nEMG\n");
   PrintRealMatrix(NlevelMG, EMG);
@@ -240,25 +204,23 @@ int main() {
   PrintRealMatrix(NlevelMG, MuMG);
   printf("\nDisMG\n");
   PrintRealMatrix(NlevelMG, DisMG);
-  printf("\nBasMG\n");
-  PrintRealMatrix(NlevelMG, basMG);
-  printf("\nDMG\n");
-  PrintComplexMatrix(NlevelMG, DMG);
 
   // Data files for printing instantaneous data
-  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_100.dat","w");
-  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_100.dat", "w");
-  popfp = fopen("DATA/SMA_PEAK1/Population_100.dat","w");
-  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_100.dat","w");
+  dfp = fopen("DATA/PRB_JPCC/DipoleMoment.txt","w");
+  dfpMG = fopen("DATA/PRB_JPCC/DipoleMomentMG.txt", "w");
+  popfp = fopen("DATA/PRB_JPCC/Population.txt","w");
+  popMGfp = fopen("DATA/PRB_JPCC/PopulationMG.txt","w");
 
   // Get initial dipole moments
-  dipole_moment = TrMuD(Nlevel, Mu, D)*mu_au_to_si;
-  dipole_momentMG = TrMuD(NlevelMG, MuMG, DMG)*mu_au_to_si;
+  dipole_moment = TrMuD(Nlevel, Mu, D);
+  dipole_momentMG = TrMuD(NlevelMG, MuMG, DMG);
 
-  FillDFTArray(0, creal(dipole_moment), cimag(dipole_moment), dipole);
-  FillDFTArray(0, creal(dipole_momentMG), cimag(dipole_momentMG), dipoleMG);
-  FillDFTArray(0, 0., 0., efield);
+  // Store dm to vectors along with initial field
+  dipole[0]= dipole_moment; 
 
+  dipoleMG[0] = dipole_momentMG;
+
+  efield[0] = 0. + 0.*I;
 
 
   //void H_interaction(int dim, double *Hint, double *mu, double dpm, double R) 
@@ -273,17 +235,14 @@ int main() {
     
     RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
     
-    dipole_moment = TrMuD(Nlevel, Mu, D); 
-    FillDFTArray(i, creal(dipole_moment*mu_au_to_si), cimag(dipole_moment*mu_au_to_si), dipole);
+    dipole_moment = TrMuD(Nlevel, Mu, D)*mu_au_to_si; 
     
     H_interaction(NlevelMG, HintMG, MuMG, creal(dipole_moment), r);
     
     RK3(NlevelMG, dt*i, basMG, EMG, HintMG, MuMG, DisMG, DMG, dt);
-    //RK3(NlevelMG, dt*i, basMG, EMG, HintMG, MuZERO, DisMG, DMG, dt);
+    //RK3(Nlevel, dt*i, basMG, EMG, HintMG, MuZERO, DisMG, DMG, dt);
     
-    dipole_momentMG = TrMuD(NlevelMG, MuMG, DMG);
-    //dipole_momentMG = TrMuD(NlevelMG, MuZERO, DMG)*mu_au_to_si;
-    FillDFTArray(i, creal(dipole_momentMG*mu_au_to_si), cimag(dipole_momentMG*mu_au_to_si), dipoleMG);
+    dipole_momentMG = TrMuD(NlevelMG, MuMG, DMG)*mu_au_to_si;
     
     H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
    
@@ -301,35 +260,61 @@ int main() {
     for (int j=0; j<NlevelMG; j++) {
 
 
-      fprintf(popMGfp,"  %12.10e",creal(DMG[j*NlevelMG+j]));
-      trMG+=creal(DMG[j*NlevelMG+j]);
+      fprintf(popMGfp,"  %12.10e",creal(DMG[j*Nlevel+j]));
+      trMG+=creal(DMG[j*Nlevel+j]);
 
     }
     fprintf(popfp," %12.10e",tr);
     fprintf(popMGfp," %12.10e",trMG);
 
+    dipole[i] = dipole_moment;
+    //dipole[i][1] = 0.;
+
     // Uncomment if you want a file with dipole moment data in it for the nanoparticle
     fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_moment),cimag(dipole_moment));
   
+    dipoleMG[i] = dipole_momentMG;
+    //dipoleMG[i][1] = 0.;
     // Uncomment if you want a file with dipole moment data in it for molecule
     fprintf(dfpMG,"%f %12.10e %12.10e\n",dt*i,creal(dipole_momentMG),cimag(dipole_momentMG));
- 
-    FillDFTArray(i,  E_au_to_si*E_Field(dt*i), 0, efield);
+
+    efield[i] = E_au_to_si*E_Field(dt*i) + 0.*I;
+    //efield[i][1] = 0.;
   }
 
   for (int i=numTime; i<zeropad; i++) {
 
-    FillDFTArray(i, 0., 0., dipole);
-    FillDFTArray(i, 0., 0., dipoleMG);
-    FillDFTArray(i, 0., 0., efield);
+    dipole[i] = 0.+0.*I;
+    //dipole[i][1] = 0.;
 
+    dipoleMG[i] = 0.+0.*I;
+    //dipoleMG[i][1] = 0.;
+
+    efield[i] = 0.+0.*I;
+    //efield[i][1] = 0.;
   }
  
-  fftw_execute(npp);
-  fftw_execute(mgp);
-  fftw_execute(efp);
-  
+   
+  // double complex *ftout, double *freqvec
+  double complex *NPSpectrum, *MGSpectrum, *LaserSpectrum;
+  double *EV;
+  // Currently FT over 500 different energies, hence the arrays for the various spectra
+  // need to have length 500... will make them longer for good measure
+  NPSpectrum = (double complex *)malloc(1000*sizeof(double complex));
+  MGSpectrum = (double complex *)malloc(1000*sizeof(double complex));
+  LaserSpectrum = (double complex *)malloc(1000*sizeof(double complex));
+  EV = (double *)malloc(1000*sizeof(double));
 
+  // Now calculate the spectra
+  fftw_plan np, mg, ef;
+  np = fftw_plan_dft_1d((numTime+zeropad), dipole, dipole, FFTW_BACKWARD, FFTW_ESTIMATE);
+  mg = fftw_plan_dft_1d((numTime+zeropad), dipoleMG, dipoleMG, FFTW_BACKWARD, FFTW_ESTIMATE);
+  ef = fftw_plan_dft_1d((numTime+zeropad), efield, efield, FFTW_BACKWARD, FFTW_ESTIMATE);
+ 
+  fftw_execute(np);
+  fftw_execute(mg);
+  fftw_execute(ef);
+ 
 /*My slow DFT function! 
   Fourier(dipole, numTime+zeropad, dt, NPSpectrum, EV);
   Fourier(dipoleMG, numTime+zeropad, dt, MGSpectrum, EV);
@@ -338,14 +323,19 @@ int main() {
 
   
   FILE *absfp; 
-  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_100.dat","w");
-  fprintf(absfp, "#  Energy (ev)    SCAT NP      SCAT MG       ABS NP       ABS MG\n");
+  absfp = fopen("DATA/PRB_JPCC/MAbsorptionSpectrum.txt","w");
+  fprintf(absfp, "#  Energy (ev)    Absorption NP      Absorption MG\n");
   
   int nfreq = 5001;
   // ~4.05 eV is max energy/ max freq
   double maxfreq = 50*0.08188379587298;
   double df = maxfreq / (nfreq - 1);
   double eps_0 = 1.0 / (4.0 * M_PI);
+  printf("  numTime+zeropad %i\n",numTime+zeropad);
+  printf("  min freq in au:  %12.10e\n",2*pi/(dt*(numTime+zeropad)));
+  printf("  min freq in si:  %12.10e\n",2*pi/(dt*(numTime+zeropad))*omega_au);
+  printf("  max freq in au:  %12.10e\n",2*pi/dt);
+  printf("  max freq in si:  %12.10e\n",(2*pi/dt)*omega_au);
   for (int i=1; i<(numTime+zeropad); i++) {
 
     // This is omega in atomic units - same as energy in atomic units
@@ -355,31 +345,34 @@ int main() {
     double omega_si = omega*omega_au;
     double eev = omega*27.211;
     double k = omega_si/2.99792458e+8;
-    double pre_scat = k*k*k*k/(6*pi*8.854187e-12*8.854187e-12); 
+    double pre_ext = k*k*k*k/(6*pi*8.854187e-12*8.854187e-12); 
     double pre_abs = k/(8.854187e-12);
-    double npr = nps[i][0]/numTime;
-    double npi = nps[i][1]/numTime;
+    double complex npr = creal(dipole[i])/numTime;
+    double complex npi = cimag(dipole[i])/numTime;
 
-    double mgr = mgs[i][0]/numTime;
-    double mgi = mgs[i][1]/numTime;
+    double complex mgr = creal(dipoleMG[i])/numTime;
+    double complex mgi = cimag(dipoleMG[i])/numTime;
 
-    double efr = efs[i][0]/numTime;
-    double efi = efs[i][1]/numTime;
+    double complex efr = creal(efield[i])/numTime;
+    double complex efi = cimag(efield[i])/numTime;
 
-    double complex alphaNP = (npr+I*npi)/(efr+I*efi);
-    double complex alphaMG = (mgr+I*mgi)/(efr+I*efi);
-
-    double sig_scat_NP = pre_scat * creal(alphaNP*conj(alphaNP));
-    double sig_scat_MG = pre_scat * creal(alphaMG*conj(alphaMG));
+    //double pre = k/(8.854187e-12);
+    double complex alphaNP = (npr+npi)/(efr+efi);
+    double complex alphaMG = (mgr+mgi)/(efr+efi);
+    //double sig_NP = pre*cimag(alphaNP);
+    //double sig_MG = pre*cimag(alphaMG);
+    double sig_ext_NP = pre_ext * creal(alphaNP*conj(alphaNP));
+    double sig_ext_MG = pre_ext * creal(alphaMG*conj(alphaMG));
     double sig_abs_NP = pre_abs * cimag(alphaNP);
     double sig_abs_MG = pre_abs * cimag(alphaMG);
 
-    // Going to print absorption and scattering cross section in m^2
-    fprintf(absfp, "  %12.10e  %12.10e  %12.10e  %12.10e  %12.10e\n",eev,sig_scat_NP, sig_scat_MG, sig_abs_NP, sig_abs_MG);
+    // Going to print absorption cross section in abs/micron^2
+    fprintf(absfp, "  %12.10e  %12.10e  %12.10e  %12.10e  %12.10e %12.10e  %12.10e\n",eev,npr, npi, mgr, mgi, efr, efi);
   }
   
   fclose(absfp);
   
+  //fclose(dfp);
   return 0;
 }
 
@@ -587,12 +580,12 @@ for (int i=0; i<dim; i++) {
 double E_Field(double time) {
 
   double Ef;
-  double tau = 75.;
+  double tau = 50.;
 
   //Ef = 0.01*sin(pi*time/tau)*sin(pi*time/tau)*exp(-0.005*time)*(sin(0.07423*time)+sin(0.1*time)+sin(0.5*time));
   if (time<tau) {
 
-    Ef = 0.001*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
+    Ef = 0.0001*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
 
   }
   else Ef = 0.;
@@ -612,8 +605,7 @@ void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double co
   temp_t1  = (double complex *)malloc(Nlevel*Nlevel*sizeof(double complex));
   temp_t2  = (double complex *)malloc(Nlevel*Nlevel*sizeof(double complex));
   LD       = (double complex *)malloc(Nlevel*Nlevel*sizeof(double complex));
- 
-  double gk;
+
   // Form |g><g| matrix
   for (i=0; i<Nlevel; i++) {
     for (j=0; j<Nlevel; j++) {
@@ -626,7 +618,6 @@ void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double co
 
   for (k=1; k<Nlevel; k++) {
 
-    gk = gamma[k];
     for (i=0; i<Nlevel; i++) {
 
       for (j=0; j<Nlevel; j++) {
@@ -641,7 +632,7 @@ void L_Diss(int Nlevel, double *gamma, double complex *D, double *bas, double co
     AntiCommutator(Nlevel, temp_bas, D, temp_t2);
     for (i=0; i<Nlevel; i++) {
       for (j=0; j<Nlevel; j++) {
-        LD[i*Nlevel+j] += gk*temp_t1[i*Nlevel+j] - gk*temp_t2[i*Nlevel+j];
+        LD[i*Nlevel+j] += gamma[2]*temp_t1[i*Nlevel+j] - gamma[2]*temp_t2[i*Nlevel+j];
       }
     }
  }
@@ -691,6 +682,7 @@ void Fourier(double complex *dm, int n, double dt, double complex *ftout, double
 }
 
 double complex TrMuD(int Nlevel, double *Mu, double complex *D) {
+
   double complex tr = 0. + 0.*I;
   for (int i=0; i<Nlevel; i++) {
 
@@ -730,9 +722,3 @@ void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R) {
 
 }
 
-void FillDFTArray(int fftw_iter, double real_val, double imag_val, fftw_complex* ar) {
-
-  ar[fftw_iter][REAL] = real_val;
-  ar[fftw_iter][IMAG] = imag_val;
-
-}

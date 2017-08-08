@@ -1,7 +1,0 @@
-T1 Diss Au = 4.7775e-5
-T2 Diss Au = 2.3887e-5
-T3 Diss Au = 19.11e-6
-T4 Diss Au = 9.555e-6
-T5 Diss Au = 4.7775e-6
-T6 Diss Au = 2.3887e-6
-T7 Diss Au = 9.555e-7
