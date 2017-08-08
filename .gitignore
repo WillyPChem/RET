@@ -1,3 +1,4 @@
 *.dat
 DATA/*.dat
 UNCOUPLED/DATA/*.dat
+*.tar
