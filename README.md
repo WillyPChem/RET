@@ -10,3 +10,10 @@ This can be changed fairly easily in the code if needed.
 
 There is a subdirectory called UNCOUPLED with a file called NP.c that contains code for a single system (no coupling).  
 It is a good check on the Hamiltonian parameters to run the uncoupled code first.  
+
+- Compling
+
+-- Both codes come with a makefile that will properly link the code to the Fastest Fourier Transform in the West library
+-- To comple simply type 'make' 
+-- The coupled code will compile to an executable called 'Coupled.x'
+-- the uncoupled code will compile to an executable called 'NP.x'
