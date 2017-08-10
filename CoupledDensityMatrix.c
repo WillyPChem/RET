@@ -145,9 +145,9 @@ int main() {
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
-  Efp = fopen("Matrices/PLASMON/Energy_Au.txt","r");
-  Mufp = fopen("Matrices/PLASMON/Dipole_Au.txt","r");
-  Disfp = fopen("Matrices/PLASMON/Dissipation_Au.txt","r");
+  Efp = fopen("Matrices/PLASMON/Energy_Ag.txt","r");
+  Mufp = fopen("Matrices/PLASMON/Dipole_Ag.txt","r");
+  Disfp = fopen("Matrices/PLASMON/Dissipation_Ag.txt","r");
 
   EfpMG = fopen("Matrices/SMA_PEAK1/Energy.txt","r");
   MufpMG = fopen("Matrices/SMA_PEAK1/Dipole.txt","r");
@@ -615,7 +615,7 @@ double E_Field(double time) {
   //Ef = 0.01*sin(pi*time/tau)*sin(pi*time/tau)*exp(-0.005*time)*(sin(0.07423*time)+sin(0.1*time)+sin(0.5*time));
   if (time<tau) {
 
-    Ef = 0.00025*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
+    Ef = 0.0002*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
 
   }
   else Ef = 0.;
