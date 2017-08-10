@@ -202,7 +202,7 @@ int main() {
        E[i] = val;
 
        fscanf(Mufp,"%lf",&val);
-       Mu[i] = val/4.;
+       Mu[i] = val;
 
        fscanf(Disfp,"%lf",&val);
        Dis[i] = val;
