@@ -336,7 +336,8 @@ int main() {
   
   
   printf("  Max(||D(0)-D(t)||) is %12.10e at t=%12.10e\n",max_MG_Error,TransferTime);
-  printf("  r_x      r_y     r_z      Energy Transferred (eV) \n");
+
+  printf("  r_x          r_y         r_z          Energy Transferred (eV) \n");
   printf("  %6.3e    %6.3e   %6.3e    %12.10e eV\n",r[0],r[1],r[2],E_Transfer*27.211);
 
   for (int i=numTime; i<zeropad; i++) {
