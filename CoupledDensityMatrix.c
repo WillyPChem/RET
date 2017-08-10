@@ -127,7 +127,7 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
-  r[0] = 20.;
+  r[0] = 2000000.;
   r[1] = 0.;
   r[2] = 0.;
 
@@ -615,7 +615,7 @@ double E_Field(double time) {
   //Ef = 0.01*sin(pi*time/tau)*sin(pi*time/tau)*exp(-0.005*time)*(sin(0.07423*time)+sin(0.1*time)+sin(0.5*time));
   if (time<tau) {
 
-    Ef = 0.001*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
+    Ef = 0.00025*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
 
   }
   else Ef = 0.;
