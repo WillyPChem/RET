@@ -18,7 +18,7 @@ void Fourier (double complex *dm, int n, double dt, double complex *ftout, doubl
 double complex TrMuD(int Nlevel, double *Mu, double complex *D);
 double E_Field(double time);
 void FillDFTArray(int fftw_iter, double real_val, double imag_val, fftw_complex* ar);
-
+double D_Error(int dim, double complex *D);
 // Function prototype for H_interaction
 void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R);
 
@@ -127,9 +127,9 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
-  r[0] = 0.;
+  r[0] = 20.;
   r[1] = 0.;
-  r[2] = 100.;
+  r[2] = 0.;
 
 
   // Files for stuff:
@@ -145,9 +145,9 @@ int main() {
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
-  Efp = fopen("Matrices/SMA_PEAK1/Energy5s.txt","r");
-  Mufp = fopen("Matrices/SMA_PEAK1/Dipole5s.txt","r");
-  Disfp = fopen("Matrices/SMA_PEAK1/Dissipation5s.txt","r");
+  Efp = fopen("Matrices/PLASMON/Energy_Au.txt","r");
+  Mufp = fopen("Matrices/PLASMON/Dipole_Au.txt","r");
+  Disfp = fopen("Matrices/PLASMON/Dissipation_Au.txt","r");
 
   EfpMG = fopen("Matrices/SMA_PEAK1/Energy.txt","r");
   MufpMG = fopen("Matrices/SMA_PEAK1/Dipole.txt","r");
@@ -202,7 +202,7 @@ int main() {
        E[i] = val;
 
        fscanf(Mufp,"%lf",&val);
-       Mu[i] = val;
+       Mu[i] = val/4.;
 
        fscanf(Disfp,"%lf",&val);
        Dis[i] = val;
@@ -265,11 +265,28 @@ int main() {
   H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
   H_interaction(NlevelMG, HintMG, MuMG, creal(dipole_moment), r);
 
-  
-
+  //printf("  Error is %12.10e\n",D_Error(Nlevel*Nlevel, D));
+  //printf("  MGErr is %12.10e\n",D_Error(NlevelMG*NlevelMG, DMG));
+  double max_MG_Error, MG_Error;
+  double EnMG, E_Transfer, TransferTime;
+  max_MG_Error = D_Error(NlevelMG*NlevelMG, DMG);
   for (int i=1; i<numTime; i++) {
 
-    // Calculate Hint now!
+    // How perturbed is the Density Matrix on MG?
+    MG_Error = D_Error(NlevelMG*NlevelMG, DMG);
+
+    // What is the energy of MG system now?
+    EnMG = creal(TrMuD(NlevelMG, EMG, DMG));
+
+    // If more perturbed than before, update max_MG_Error
+    // And E_Transfer
+    if (MG_Error > max_MG_Error) {
+
+      max_MG_Error = MG_Error;
+      E_Transfer = EnMG;
+      TransferTime = i*dt;
+
+    }
     
     RK3(Nlevel, dt*i, bas, E, Hint, Mu, Dis, D, dt);
     
@@ -316,6 +333,9 @@ int main() {
  
     FillDFTArray(i,  E_au_to_si*E_Field(dt*i), 0, efield);
   }
+
+  printf("  Max(||D(0)-D(t)||) is %12.10e at t=%12.10e\n",max_MG_Error,TransferTime);
+  printf("  Energy Transferred is %12.10e eV\n",E_Transfer*27.211);
 
   for (int i=numTime; i<zeropad; i++) {
 
@@ -736,3 +756,27 @@ void FillDFTArray(int fftw_iter, double real_val, double imag_val, fftw_complex*
   ar[fftw_iter][IMAG] = imag_val;
 
 }
+
+// Computes the Frobenius norm of the difference between the current density matrix and the initial density matrix
+double D_Error(int dim, double complex *D) {
+
+  double complex e;
+  double complex one = 1. + 0.*I;
+  double complex zero = 0. + 0.*I;
+  double FN;
+
+  e = 0.+0*I;
+ 
+  e = (one - D[0])*conj(one-D[0]);
+
+  for (int i=1; i<dim; i++) {
+
+    e += (zero - D[i])*conj(zero-D[i]);  
+
+  }
+
+  FN = creal(csqrt(e));
+
+  return FN;
+}
+
