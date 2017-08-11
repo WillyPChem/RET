@@ -543,6 +543,7 @@ void RK3(int Nlevel, double time, double *bas, double *E, double *Hint, double *
   free(k2);
   free(k3);
   free(H);
+  free(LD);
   free(gamma);
 }
 
