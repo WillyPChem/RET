@@ -127,7 +127,7 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
-  r[0] = 2000000.;
+  r[0] = 20.;
   r[1] = 0.;
   r[2] = 0.;
 
@@ -211,7 +211,7 @@ int main() {
   for (int i=0; i<dimMG; i++) {
 
        fscanf(EfpMG,"%lf",&val);
-       EMG[i] = val;
+       EMG[i] = val*2.4;
 
        fscanf(MufpMG,"%lf",&val);
        MuMG[i] = val;
@@ -334,7 +334,8 @@ int main() {
     FillDFTArray(i,  E_au_to_si*E_Field(dt*i), 0, efield);
   }
   
-  
+  printf("  E_mg_1 is %12.10f: \n", EMG[3*1+1]*27.211);
+  printf("  E_mg_2 is %12.10f: \n", EMG[3*2+2]*27.211); 
   printf("  Max(||D(0)-D(t)||) is %12.10e at t=%12.10e\n",max_MG_Error,TransferTime);
 
   printf("  r_x          r_y         r_z          Energy Transferred (eV) \n");
@@ -365,8 +366,8 @@ int main() {
   fprintf(absfp, "#  Energy (ev)    SCAT NP      SCAT MG       ABS NP       ABS MG\n");
   
   int nfreq = 5001;
-  // ~4.05 eV is max energy/ max freq
-  double maxfreq = 50*0.08188379587298;
+  // ~6.48 eV is max energy/ max freq
+  double maxfreq = 70*0.08188379587298;
   double df = maxfreq / (nfreq - 1);
   double eps_0 = 1.0 / (4.0 * M_PI);
   for (int i=1; i<(numTime+zeropad); i++) {
@@ -615,7 +616,7 @@ double E_Field(double time) {
   //Ef = 0.01*sin(pi*time/tau)*sin(pi*time/tau)*exp(-0.005*time)*(sin(0.07423*time)+sin(0.1*time)+sin(0.5*time));
   if (time<tau) {
 
-    Ef = 0.0002*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
+    Ef = 0.0003*sin(time*pi/tau)*sin(time*pi/tau)*sin(0.07423*time);
 
   }
   else Ef = 0.;
