@@ -45,9 +45,8 @@ int main() {
   int Nlevel, dim;
   
   // NP levels can be variable in principle
-  //printf("  How many states are in your NP system? \n");
-  //scanf("%i",&Nlevel);
-  Nlevel=2;
+  printf("  How many states are in your NP system? \n");
+  scanf("%i",&Nlevel);
   dim = Nlevel*Nlevel;
   // MG variables here!
   int NlevelMG = 3;
@@ -143,7 +142,7 @@ int main() {
   double tr, trMG;
   double complex dipole_moment, dipole_momentMG;
   FILE *dfp, *dfpMG;
-  FILE *popfp, *popMGfp;
+  FILE *popfp, *popMGfp, *ecumfp;
 
   // Separation vector
   double *r;
@@ -169,6 +168,9 @@ int main() {
   Efp = fopen("Matrices/PLASMON/Energy_Ag.txt","r");
   Mufp = fopen("Matrices/PLASMON/Dipole_Ag.txt","r");
   Disfp = fopen("Matrices/PLASMON/Dissipation_Ag.txt","r");
+  //Efp = fopen("Matrices/SMA_PEAK1/Energy5s.txt","r");
+  //Mufp = fopen("Matrices/SMA_PEAK1/Dipole5s.txt","r");
+  //Disfp = fopen("Matrices/SMA_PEAK1/Dissipation5s.txt","r");
 
   EfpMG = fopen("Matrices/SMA_PEAK1/Energy.txt","r");
   MufpMG = fopen("Matrices/SMA_PEAK1/Dipole.txt","r");
@@ -232,7 +234,7 @@ int main() {
   for (int i=0; i<dimMG; i++) {
 
        fscanf(EfpMG,"%lf",&val);
-       EMG[i] = val*2.4;
+       EMG[i] = val;
 
        fscanf(MufpMG,"%lf",&val);
        MuMG[i] = val;
@@ -267,10 +269,11 @@ int main() {
   PrintComplexMatrix(NlevelMG, DMG);
 
   // Data files for printing instantaneous data
-  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_100.dat","w");
-  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_100.dat", "w");
-  popfp = fopen("DATA/SMA_PEAK1/Population_100.dat","w");
-  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_100.dat","w");
+  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_Ag.dat","w");
+  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_Ag.dat", "w");
+  popfp = fopen("DATA/SMA_PEAK1/Population_Ag.dat","w");
+  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_Ag.dat","w");
+  ecumfp = fopen("DATA/SMA_PEAK1/CumulativeEnergyTransfer_Ag.dat","w");
 
   // Get initial dipole moments
   dipole_moment = TrMuD(Nlevel, Mu, D)*mu_au_to_si;
@@ -290,9 +293,18 @@ int main() {
   //printf("  MGErr is %12.10e\n",D_Error(NlevelMG*NlevelMG, DMG));
   double max_MG_Error, MG_Error;
   double EnMG, E_Transfer, TransferTime;
+  double e1_curr, e1_prev, e1_cum, e2_curr, e2_prev, e2_cum;
+  e1_curr = 0.;
+  e1_prev = 0.;
+  e1_cum = 0.;
+  e2_curr = 0.;
+  e2_prev = 0.;
+  e2_cum = 0.;
   max_MG_Error = D_Error(NlevelMG*NlevelMG, DMG);
   for (int i=1; i<numTime; i++) {
 
+    e1_prev = creal(DMG[1*NlevelMG+1])*EMG[1*NlevelMG+1];
+    e2_prev = creal(DMG[2*NlevelMG+2])*EMG[2*NlevelMG+2];
     // How perturbed is the Density Matrix on MG?
     MG_Error = D_Error(NlevelMG*NlevelMG, DMG);
 
@@ -325,6 +337,11 @@ int main() {
     
     H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
    
+    e1_curr = creal(DMG[1*NlevelMG+1])*EMG[1*NlevelMG+1];
+    e2_curr = creal(DMG[2*NlevelMG+2])*EMG[2*NlevelMG+2];
+
+    if (e1_curr>e1_prev) e1_cum+=(e1_curr-e1_prev);
+    if (e2_curr>e2_prev) e2_cum+=(e2_curr-e2_prev);
 
     fprintf(popfp,"\n %f ",dt*i);
     fprintf(popMGfp,"\n %f ",dt*i);
@@ -345,7 +362,7 @@ int main() {
     }
     fprintf(popfp," %12.10e",tr);
     fprintf(popMGfp," %12.10e",trMG);
-
+    fprintf(ecumfp, "%f   %12.10e  %12.10e  %12.10e  %12.10e\n",dt*i,e1_curr, e1_cum,e2_curr, e2_cum);
     // Uncomment if you want a file with dipole moment data in it for the nanoparticle
     fprintf(dfp," %f  %12.10e  %12.10e\n",dt*i,creal(dipole_moment),cimag(dipole_moment));
   
@@ -392,8 +409,8 @@ int main() {
 
   
   FILE *absfp, *emsfp; 
-  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_100.dat","w");
-  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_100.dat","w");
+  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_Ag.dat","w");
+  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_Ag.dat","w");
   fprintf(absfp, "#  Energy (ev)    SCAT NP      SCAT MG       ABS NP       ABS MG\n");
   
   int nfreq = 5001;
