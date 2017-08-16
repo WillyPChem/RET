@@ -21,7 +21,7 @@ void FillDFTArray(int fftw_iter, double real_val, double imag_val, fftw_complex*
 double D_Error(int dim, double complex *D);
 // Function prototype for H_interaction
 void H_interaction(int dim, double *Hint, double *mu, double dpm, double *R);
-
+void DipoleAcceleration(int dim, double dt, fftw_complex* dp, fftw_complex* dpa);
 
 // NOTE!!!  You need three global variables for the rates associated with 
 // The Lindblad operators - gamma, beta, and alpha should be defined here according
@@ -45,8 +45,9 @@ int main() {
   int Nlevel, dim;
   
   // NP levels can be variable in principle
-  printf("  How many states are in your NP system? \n");
-  scanf("%i",&Nlevel);
+  //printf("  How many states are in your NP system? \n");
+  //scanf("%i",&Nlevel);
+  Nlevel=2;
   dim = Nlevel*Nlevel;
   // MG variables here!
   int NlevelMG = 3;
@@ -147,7 +148,7 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
-  r[0] = 20.;
+  r[0] = 47.;
   r[1] = 0.;
   r[2] = 0.;
 
@@ -361,6 +362,11 @@ int main() {
   printf("  r_x          r_y         r_z          Energy Transferred (eV) \n");
   printf("  %6.3e    %6.3e   %6.3e    %12.10e eV\n",r[0],r[1],r[2],E_Transfer*27.211);
 
+
+  //void DipoleAcceleration(int dim, double dt, fftw_complex* dp, fftw_complex* dpa)
+  DipoleAcceleration(numTime, dt, dipole, dipoleA);
+  DipoleAcceleration(numTime, dt, dipoleMG, dipoleMGA);
+
   for (int i=numTime; i<zeropad; i++) {
 
     FillDFTArray(i, 0., 0., dipole);
@@ -385,7 +391,8 @@ int main() {
 */
 
   
-  FILE *absfp; 
+  FILE *absfp, *emsfp; 
+  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_100.dat","w");
   absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_100.dat","w");
   fprintf(absfp, "#  Energy (ev)    SCAT NP      SCAT MG       ABS NP       ABS MG\n");
   
@@ -414,6 +421,14 @@ int main() {
     double efr = efs[i][0]/numTime;
     double efi = efs[i][1]/numTime;
 
+    double emnpr = emiss[i][0]/numTime;
+    double emnpi = emiss[i][1]/numTime;
+    double emmgr = emissMG[i][0]/numTime;
+    double emmgi = emissMG[i][1]/numTime;
+
+    double sig_emiss_np = creal( emnpr*emnpr+emnpi*emnpi );
+    double sig_emiss_mg = creal( emmgr*emmgr+emmgi*emmgi );
+
     double complex alphaNP = (npr+I*npi)/(efr+I*efi);
     double complex alphaMG = (mgr+I*mgi)/(efr+I*efi);
 
@@ -424,6 +439,7 @@ int main() {
 
     // Going to print absorption and scattering cross section in m^2
     fprintf(absfp, "  %12.10e  %12.10e  %12.10e  %12.10e  %12.10e\n",eev,sig_scat_NP, sig_scat_MG, sig_abs_NP, sig_abs_MG);
+    fprintf(emsfp, "  %12.10e  %12.10e  %12.10e  \n",eev, sig_emiss_np, sig_emiss_mg);
   }
   
   fclose(absfp);
@@ -809,38 +825,29 @@ double D_Error(int dim, double complex *D) {
   return FN;
 }
 
-void DipoleAcceleration(int dim, fftw_complex* dp, fftw_complex* dpa) {
-  stencil_x[0] = stencil_x[1];
-  stencil_x[1] = stencil_x[2];
-  stencil_x[2] = stencil_x[3];
-  stencil_x[3] = stencil_x[4];
-  stencil_x[4] = dipole_moment_x;
+void DipoleAcceleration(int dim, double dt, fftw_complex* dp, fftw_complex* dpa) {
 
-  stencil_y[0] = stencil_y[1];
-  stencil_y[1] = stencil_y[2];
-  stencil_y[2] = stencil_y[3];
-  stencil_y[3] = stencil_y[4];
-  stencil_y[4] = dipole_moment_y;
+  double complex st1, st2, st3, st4, st5, accel;
 
-  stencil_z[0] = stencil_z[1];
-  stencil_z[1] = stencil_z[2];
-  stencil_z[2] = stencil_z[3];
-  stencil_z[3] = stencil_z[4];
-  stencil_z[4] = dipole_moment_z;
+  // initialize stencil variables to zero
+  st1 = 0.+0.*I;
+  st2 = 0.+0.*I;
+  st3 = 0.+0.*I;
+  st4 = 0.+0.*I;
+  st5 = 0.+0.*I;  
+  for (int i=0; i<dim; i++) {
 
-  dipole_acceleration_x = -1.0/12.0 * (stencil_x[0]+stencil_x[4])
-                        +  4.0/3.0  * (stencil_x[1]+stencil_x[3])
-                        -  5.0/2.0  *  stencil_x[2];
-  dipole_acceleration_x /= (dt*dt);
+    st1 = st2;
+    st2 = st3;
+    st3 = st4;
+    st5 = dp[i][REAL] + dp[i][IMAG]*I;
+    accel = (-1./12.)*(st1+st5) + (4./3.)*(st2+st4)-(5./2.)*st3;
+    accel /= (dt*dt);
+    dpa[i][REAL] = creal(accel);
+    dpa[i][IMAG] = cimag(accel);
 
-  dipole_acceleration_y = -1.0/12.0 * (stencil_y[0]+stencil_y[4])
-                        +  4.0/3.0  * (stencil_y[1]+stencil_y[3])
-                        -  5.0/2.0  *  stencil_y[2];
-  dipole_acceleration_y /= (dt*dt);
+    //printf("  %12.10e  %12.10e  %12.10e  %12.10e  %12.10e\n",dt*i,creal(st5),cimag(st5),creal(accel),cimag(accel));    
 
-  dipole_acceleration_z = -1.0/12.0 * (stencil_z[0]+stencil_z[4])
-                        +  4.0/3.0  * (stencil_z[1]+stencil_z[3])
-                        -  5.0/2.0  *  stencil_z[2];
-  dipole_acceleration_z /= (dt*dt);
+  }
 
 }
