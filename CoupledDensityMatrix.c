@@ -57,19 +57,27 @@ int main() {
   int dft_dim = numTime+zeropad;
   // FFTW variables here -> inputs to fft
   fftw_complex *dipole;
+  fftw_complex *dipoleA;
   fftw_complex *efield;
   fftw_complex *dipoleMG;
+  fftw_complex *dipoleMGA;
   fftw_complex *nps;
   fftw_complex *mgs;
   fftw_complex *efs;
+  fftw_complex *emiss;
+  fftw_complex *emissMG;
 
   // Allocate memory for FFTW arrays
   dipole = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
+  dipoleA= (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
   efield = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
   dipoleMG = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
+  dipoleMGA= (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
   nps = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
   mgs = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
   efs = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
+  emiss = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
+  emissMG = (fftw_complex*)malloc(dft_dim*sizeof(fftw_complex));
 
   printf("  just declared bunch of arrays! \n");
   fflush(stdout);
@@ -91,6 +99,18 @@ int main() {
                                       efs,
                                       FFTW_BACKWARD,
                                       FFTW_ESTIMATE);
+
+  fftw_plan emp = fftw_plan_dft_1d(dft_dim, 
+ 					dipoleA,
+					emiss,
+					FFTW_BACKWARD,
+					FFTW_ESTIMATE);
+
+  fftw_plan emgp = fftw_plan_dft_1d(dft_dim,
+					dipoleMGA,
+					emissMG,
+					FFTW_BACKWARD,
+					FFTW_ESTIMATE); 
 
   printf("  STILL GOOD AFTER FFTW PLANS\n");
   fflush(stdout);
@@ -346,13 +366,17 @@ int main() {
     FillDFTArray(i, 0., 0., dipole);
     FillDFTArray(i, 0., 0., dipoleMG);
     FillDFTArray(i, 0., 0., efield);
+    FillDFTArray(i, 0., 0., dipoleA);
+    FillDFTArray(i, 0., 0., dipoleMGA);
 
   }
  
   fftw_execute(npp);
   fftw_execute(mgp);
   fftw_execute(efp);
-  
+  fftw_execute(emp);
+  fftw_execute(emgp);
+ 
 
 /*My slow DFT function! 
   Fourier(dipole, numTime+zeropad, dt, NPSpectrum, EV);
@@ -785,3 +809,38 @@ double D_Error(int dim, double complex *D) {
   return FN;
 }
 
+void DipoleAcceleration(int dim, fftw_complex* dp, fftw_complex* dpa) {
+  stencil_x[0] = stencil_x[1];
+  stencil_x[1] = stencil_x[2];
+  stencil_x[2] = stencil_x[3];
+  stencil_x[3] = stencil_x[4];
+  stencil_x[4] = dipole_moment_x;
+
+  stencil_y[0] = stencil_y[1];
+  stencil_y[1] = stencil_y[2];
+  stencil_y[2] = stencil_y[3];
+  stencil_y[3] = stencil_y[4];
+  stencil_y[4] = dipole_moment_y;
+
+  stencil_z[0] = stencil_z[1];
+  stencil_z[1] = stencil_z[2];
+  stencil_z[2] = stencil_z[3];
+  stencil_z[3] = stencil_z[4];
+  stencil_z[4] = dipole_moment_z;
+
+  dipole_acceleration_x = -1.0/12.0 * (stencil_x[0]+stencil_x[4])
+                        +  4.0/3.0  * (stencil_x[1]+stencil_x[3])
+                        -  5.0/2.0  *  stencil_x[2];
+  dipole_acceleration_x /= (dt*dt);
+
+  dipole_acceleration_y = -1.0/12.0 * (stencil_y[0]+stencil_y[4])
+                        +  4.0/3.0  * (stencil_y[1]+stencil_y[3])
+                        -  5.0/2.0  *  stencil_y[2];
+  dipole_acceleration_y /= (dt*dt);
+
+  dipole_acceleration_z = -1.0/12.0 * (stencil_z[0]+stencil_z[4])
+                        +  4.0/3.0  * (stencil_z[1]+stencil_z[3])
+                        -  5.0/2.0  *  stencil_z[2];
+  dipole_acceleration_z /= (dt*dt);
+
+}
