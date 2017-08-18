@@ -147,7 +147,7 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
-  r[0] = 47.;
+  r[0] = 500000.;
   r[1] = 0.;
   r[2] = 0.;
 
@@ -165,9 +165,9 @@ int main() {
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
-  Efp = fopen("Matrices/PLASMON/Energy_Ag.txt","r");
-  Mufp = fopen("Matrices/PLASMON/Dipole_Ag.txt","r");
-  Disfp = fopen("Matrices/PLASMON/Dissipation_Ag.txt","r");
+  Efp = fopen("Matrices/SMA_PEAK1/Energy8s.txt","r");
+  Mufp = fopen("Matrices/SMA_PEAK1/Dipole8s.txt","r");
+  Disfp = fopen("Matrices/SMA_PEAK1/Dissipation8s.txt","r");
   //Efp = fopen("Matrices/SMA_PEAK1/Energy5s.txt","r");
   //Mufp = fopen("Matrices/SMA_PEAK1/Dipole5s.txt","r");
   //Disfp = fopen("Matrices/SMA_PEAK1/Dissipation5s.txt","r");
@@ -269,11 +269,11 @@ int main() {
   PrintComplexMatrix(NlevelMG, DMG);
 
   // Data files for printing instantaneous data
-  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_Ag.dat","w");
-  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_Ag.dat", "w");
-  popfp = fopen("DATA/SMA_PEAK1/Population_Ag.dat","w");
-  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_Ag.dat","w");
-  ecumfp = fopen("DATA/SMA_PEAK1/CumulativeEnergyTransfer_Ag.dat","w");
+  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_8s.dat","w");
+  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_8s.dat", "w");
+  popfp = fopen("DATA/SMA_PEAK1/Population_8s.dat","w");
+  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_8s.dat","w");
+  ecumfp = fopen("DATA/SMA_PEAK1/CumulativeEnergyTransfer_8s.dat","w");
 
   // Get initial dipole moments
   dipole_moment = TrMuD(Nlevel, Mu, D)*mu_au_to_si;
@@ -409,8 +409,8 @@ int main() {
 
   
   FILE *absfp, *emsfp; 
-  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_Ag.dat","w");
-  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_Ag.dat","w");
+  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_SMA_8s.dat","w");
+  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_SMA_8s.dat","w");
   fprintf(absfp, "#  Energy (ev)    SCAT NP      SCAT MG       ABS NP       ABS MG\n");
   
   int nfreq = 5001;
