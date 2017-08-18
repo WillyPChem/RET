@@ -147,7 +147,11 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
+<<<<<<< HEAD
+  r[0] = 55.;
+=======
   r[0] = 500000.;
+>>>>>>> ac1f183237b0eef6b9f19eef92154e481781085d
   r[1] = 0.;
   r[2] = 0.;
 
@@ -162,8 +166,7 @@ int main() {
   MuMGfn = (char *)malloc(1000*sizeof(char));
   DisMGfn = (char *)malloc(1000*sizeof(char));
   */
-  FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
-
+  FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG, *absfp, *emsfp;
   // Open each file for reading
   Efp = fopen("Matrices/SMA_PEAK1/Energy8s.txt","r");
   Mufp = fopen("Matrices/SMA_PEAK1/Dipole8s.txt","r");
@@ -269,11 +272,21 @@ int main() {
   PrintComplexMatrix(NlevelMG, DMG);
 
   // Data files for printing instantaneous data
+<<<<<<< HEAD
+  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_Ag.dat","w");
+  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_Ag.dat", "w");
+  popfp = fopen("DATA/SMA_PEAK1/Population_Ag.dat","w");
+  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_Ag.dat","w");
+  ecumfp = fopen("DATA/SMA_PEAK1/CumulativeEnergyTransfer_Ag.dat","w");
+  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_Ag.dat","w");
+  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_Ag.dat","w");
+=======
   dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_8s.dat","w");
   dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_8s.dat", "w");
   popfp = fopen("DATA/SMA_PEAK1/Population_8s.dat","w");
   popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_8s.dat","w");
   ecumfp = fopen("DATA/SMA_PEAK1/CumulativeEnergyTransfer_8s.dat","w");
+>>>>>>> ac1f183237b0eef6b9f19eef92154e481781085d
 
   // Get initial dipole moments
   dipole_moment = TrMuD(Nlevel, Mu, D)*mu_au_to_si;
@@ -376,8 +389,8 @@ int main() {
   printf("  E_mg_2 is %12.10f: \n", EMG[3*2+2]*27.211); 
   printf("  Max(||D(0)-D(t)||) is %12.10e at t=%12.10e\n",max_MG_Error,TransferTime);
 
-  printf("  r_x          r_y         r_z          Energy Transferred (eV) \n");
-  printf("  %6.3e    %6.3e   %6.3e    %12.10e eV\n",r[0],r[1],r[2],E_Transfer*27.211);
+  printf("  r_x          r_y         r_z          E_PEAK(eV)       E_e1(eV)          E_e2(eV)          E_tot(eV)\n");
+  printf("  %6.3e    %6.3e   %6.3e    %12.10e %12.10e  %12.10e  %12.10e\n",r[0],r[1],r[2],E_Transfer*27.211, e1_cum*27.211, e2_cum*27.211, (e1_cum+e2_cum)*27.211);
 
 
   //void DipoleAcceleration(int dim, double dt, fftw_complex* dp, fftw_complex* dpa)
@@ -408,9 +421,12 @@ int main() {
 */
 
   
+<<<<<<< HEAD
+=======
   FILE *absfp, *emsfp; 
   emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_SMA_8s.dat","w");
   absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_SMA_8s.dat","w");
+>>>>>>> ac1f183237b0eef6b9f19eef92154e481781085d
   fprintf(absfp, "#  Energy (ev)    SCAT NP      SCAT MG       ABS NP       ABS MG\n");
   
   int nfreq = 5001;

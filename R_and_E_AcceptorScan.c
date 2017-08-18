@@ -137,9 +137,13 @@ int main() {
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
-  Efp = fopen("Matrices/PLASMON/Energy_Ag.txt","r");
-  Mufp = fopen("Matrices/PLASMON/Dipole_Ag.txt","r");
-  Disfp = fopen("Matrices/PLASMON/Dissipation_Ag.txt","r");
+  Efp = fopen("Matrices/PLASMON/Energy_Au.txt","r");
+  Mufp = fopen("Matrices/PLASMON/Dipole_Au.txt","r");
+  Disfp = fopen("Matrices/PLASMON/Dissipation_Au.txt","r");
+  //Efp = fopen("Matrices/SMA_PEAK1/Energy5s.txt","r");
+  //Mufp = fopen("Matrices/SMA_PEAK1/Dipole5s.txt","r");
+  //Disfp = fopen("Matrices/SMA_PEAK1/Dissipation5s.txt","r");
+
 
   EfpMG = fopen("Matrices/SMA_PEAK1/Energy.txt","r");
   MufpMG = fopen("Matrices/SMA_PEAK1/Dipole.txt","r");
@@ -215,14 +219,16 @@ int main() {
   double EMG1 = EMG[1*3+1];
   double EMG2 = EMG[2*3+2];
 
-  printf("  r_x        r_y      r_z       E_MG_1  E_MG_2  E_NP   E_T (eV)\n");
-  for (int RIND=0; RIND<20; RIND++) {
+  //printf("  r_x        r_y      r_z       E_MG_1  E_MG_2  E_NP   E_T (eV)\n");
+   printf("  r_x          r_y         r_z          E_PEAK(eV)       E_e1(eV)          E_e2(eV)          E_tot(eV)\n");
+
+  for (int RIND=0; RIND<40; RIND++) {
 
   r[0] = 20.+(double)RIND*2.;
   r[1] = 0.;
   r[2] = 0.;
 
-  for (int EIND=0; EIND<20; EIND++) {
+  for (int EIND=0; EIND<1; EIND++) {
 
   EMG[1*3+1] = EMG1*(1+2.*EIND/20.);
   EMG[2*3+2] = EMG2*(1+2.*EIND/20.);
@@ -239,8 +245,19 @@ int main() {
   //printf("  MGErr is %12.10e\n",D_Error(NlevelMG*NlevelMG, DMG));
   double max_MG_Error, MG_Error;
   double EnMG, E_Transfer, TransferTime;
+  double e1_curr, e1_prev, e1_cum, e2_curr, e2_prev, e2_cum;
+  e1_curr = 0.;
+  e1_prev = 0.;
+  e1_cum = 0.;
+  e2_curr = 0.;
+  e2_prev = 0.;
+  e2_cum = 0.;
+
   max_MG_Error = D_Error(NlevelMG*NlevelMG, DMG);
   for (int i=1; i<numTime; i++) {
+
+    e1_prev = creal(DMG[1*NlevelMG+1])*EMG[1*NlevelMG+1];
+    e2_prev = creal(DMG[2*NlevelMG+2])*EMG[2*NlevelMG+2];
 
     // How perturbed is the Density Matrix on MG?
     MG_Error = D_Error(NlevelMG*NlevelMG, DMG);
@@ -274,6 +291,12 @@ int main() {
     
     H_interaction(Nlevel, Hint, Mu, creal(dipole_momentMG), r); 
    
+    e1_curr = creal(DMG[1*NlevelMG+1])*EMG[1*NlevelMG+1];
+    e2_curr = creal(DMG[2*NlevelMG+2])*EMG[2*NlevelMG+2];
+
+    if (e1_curr>e1_prev) e1_cum+=(e1_curr-e1_prev);
+    if (e2_curr>e2_prev) e2_cum+=(e2_curr-e2_prev);
+
 
     //fprintf(popfp,"\n %f ",dt*i);
     //fprintf(popMGfp,"\n %f ",dt*i);
@@ -309,7 +332,8 @@ int main() {
   //printf("  Max(||D(0)-D(t)||) is %12.10e at t=%12.10e\n",max_MG_Error,TransferTime);
 
   //printf("  r_x        r_y      r_z       E_MG_1  E_MG_2  E_NP   E_T (eV)\n");
-  printf("  %6.3f    %6.3f   %6.3f    %6.3f  %6.3f  %6.3f  %12.10e\n",r[0],r[1],r[2],EMG[3*1+1]*27.211,EMG[3*2+2]*27.211,E[2*1+1]*27.211,E_Transfer*27.211);
+  //printf("  %6.3f    %6.3f   %6.3f    %6.3f  %6.3f  %6.3f  %12.10e\n",r[0],r[1],r[2],EMG[3*1+1]*27.211,EMG[3*2+2]*27.211,E[2*1+1]*27.211,E_Transfer*27.211);
+    printf("  %6.3e    %6.3e   %6.3e    %12.10e %12.10e  %12.10e  %12.10e\n",r[0],r[1],r[2],E_Transfer*27.211, e1_cum*27.211, e2_cum*27.211, (e1_cum+e2_cum)*27.211);
 
   }
   }
