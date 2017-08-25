@@ -3,6 +3,7 @@
 #include<stdio.h>
 #include<malloc.h>
 #include<complex.h>
+#include<time.h>
 
 // This does not need to do FFTW
 #define REAL 0
@@ -38,8 +39,8 @@ double omega_au = 4.134147e+16;;
 int main() {
 
   //Nanoparticles Variables here
-  int numTime = 2000000;
-  int zeropad = 1000000;
+  int numTime = 800000;
+  int zeropad = 800000;
   double *E, *Mu, *Dis, *bas, *Hint;
   double complex *H, *D, *P;
   double dt = 0.01;
@@ -48,7 +49,7 @@ int main() {
   // NP levels can be variable in principle
   //printf("  How many states are in your NP system? \n");
   //scanf("%i",&Nlevel);
-  Nlevel = 9;
+  Nlevel = 2;
   dim = Nlevel*Nlevel;
   // MG variables here!
   int NlevelMG = 3;
@@ -129,6 +130,7 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
+
   r[0] = 20.;
   r[1] = 0.;
   r[2] = 0.;
@@ -137,12 +139,12 @@ int main() {
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG;
 
   // Open each file for reading
-  //Efp = fopen("Matrices/PLASMON/Energy_Au.txt","r");
-  //Mufp = fopen("Matrices/PLASMON/Dipole_Au.txt","r");
-  //Disfp = fopen("Matrices/PLASMON/Dissipation_Au.txt","r");
-  Efp = fopen("Matrices/SMA_PEAK1/Energy8s.txt","r");
-  Mufp = fopen("Matrices/SMA_PEAK1/Dipole8s.txt","r");
-  Disfp = fopen("Matrices/SMA_PEAK1/Dissipation8s.txt","r");
+  Efp = fopen("Matrices/PLASMON/Energy_Au.txt","r");
+  Mufp = fopen("Matrices/PLASMON/Dipole_Au.txt","r");
+  Disfp = fopen("Matrices/PLASMON/Dissipation_Au.txt","r");
+  //Efp = fopen("Matrices/SMA_PEAK1/Energy5s.txt","r");
+  //Mufp = fopen("Matrices/SMA_PEAK1/Dipole5s.txt","r");
+  //Disfp = fopen("Matrices/SMA_PEAK1/Dissipation5s.txt","r");
 
 
   EfpMG = fopen("Matrices/SMA_PEAK1/Energy.txt","r");
@@ -216,22 +218,32 @@ int main() {
 
   }
 
+  fclose(Efp);  
+  fclose(Mufp);
+  fclose(Disfp);
+  fclose(EfpMG);
+  fclose(MufpMG);
+  fclose(DisfpMG);
+
+
   double EMG1 = EMG[1*3+1];
   double EMG2 = EMG[2*3+2];
 
+  clock_t tbegin = clock();
+
   //printf("  r_x        r_y      r_z       E_MG_1  E_MG_2  E_NP   E_T (eV)\n");
-   printf("  r_x          r_y         r_z          E_PEAK(eV)       E_e1(eV)          E_e2(eV)          E_tot(eV)\n");
+   printf("  r_x          E_1         E_2          E_PEAK(eV)       E_e1(eV)          E_e2(eV)          E_tot(eV)\n");
 
-  for (int RIND=0; RIND<40; RIND++) {
-
-  r[0] = 20.+(double)RIND*2.;
+  for (int RIND=0; RIND<100; RIND++) {
+  printf("\n");
+  r[0] = 40.+(double)RIND*0.5;
   r[1] = 0.;
   r[2] = 0.;
 
-  for (int EIND=0; EIND<20; EIND++) {
+  for (int EIND=0; EIND<100; EIND++) {
 
-  EMG[1*3+1] = EMG1*(1+2.*EIND/20.);
-  EMG[2*3+2] = EMG2*(1+2.*EIND/20.);
+  EMG[1*3+1] = EMG1*(1+2.*EIND/100.);
+  EMG[2*3+2] = EMG2*(1+2.*EIND/100.);
 
   // Get initial dipole moments
   dipole_moment = TrMuD(Nlevel, Mu, D)*mu_au_to_si;
@@ -333,10 +345,15 @@ int main() {
 
   //printf("  r_x        r_y      r_z       E_MG_1  E_MG_2  E_NP   E_T (eV)\n");
   //printf("  %6.3f    %6.3f   %6.3f    %6.3f  %6.3f  %6.3f  %12.10e\n",r[0],r[1],r[2],EMG[3*1+1]*27.211,EMG[3*2+2]*27.211,E[2*1+1]*27.211,E_Transfer*27.211);
-    printf("  %6.3e    %6.3e   %6.3e    %12.10e %12.10e  %12.10e  %12.10e\n",r[0],r[1],r[2],E_Transfer*27.211, e1_cum*27.211, e2_cum*27.211, (e1_cum+e2_cum)*27.211);
+    printf("  %6.3e    %6.3e   %6.3e    %12.10e %12.10e  %12.10e  %12.10e\n",r[0],EMG[3*1+1]*27.211,EMG[3*2+2]*27.211,E_Transfer*27.211, e1_cum*27.211, e2_cum*27.211, (e1_cum+e2_cum)*27.211);
 
   }
   }
+
+  clock_t tend = clock();
+  double time_spent = (double)(tend - tbegin) / CLOCKS_PER_SEC;
+  printf("  Took %f seconds\n",time_spent);
+
 /*  for (int i=numTime; i<zeropad; i++) {
 
     FillDFTArray(i, 0., 0., dipole);

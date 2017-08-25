@@ -1,4 +1,7 @@
 *.dat
+*.eps
 DATA/*.dat
+DATA/SMA_PEAK1/*.dat
+DATA/SMA_PEAK1/*.eps
 UNCOUPLED/DATA/*.dat
 *.tar

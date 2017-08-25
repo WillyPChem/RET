@@ -37,8 +37,8 @@ double omega_au = 4.134147e+16;;
 int main() {
 
   //Nanoparticles Variables here
-  int numTime = 1000000;
-  int zeropad = 1000000;
+  int numTime = 2000000;
+  int zeropad = 2000000;
   double *E, *Mu, *Dis, *bas, *Hint;
   double complex *H, *D, *P;
   double dt = 0.01;
@@ -147,7 +147,7 @@ int main() {
   // Separation vector
   double *r;
   r = (double *)malloc(3*sizeof(double));
-  r[0] = 500000.;
+  r[0] = 500000000.;
   r[1] = 0.;
   r[2] = 0.;
 
@@ -156,25 +156,25 @@ int main() {
   FILE *Efp, *Mufp, *Disfp, *EfpMG, *MufpMG, *DisfpMG, *absfp, *emsfp;
 
   // INPUT FILES!
+  //Efp = fopen("Matrices/PLASMON/Energy_Au.txt","r");
+  //Mufp = fopen("Matrices/PLASMON/Dipole_Au.txt","r");
+  //Disfp = fopen("Matrices/PLASMON/Dissipation_Au.txt","r");
   Efp = fopen("Matrices/SMA_PEAK1/Energy8s.txt","r");
   Mufp = fopen("Matrices/SMA_PEAK1/Dipole8s.txt","r");
   Disfp = fopen("Matrices/SMA_PEAK1/Dissipation8s.txt","r");
-  //Efp = fopen("Matrices/SMA_PEAK1/Energy5s.txt","r");
-  //Mufp = fopen("Matrices/SMA_PEAK1/Dipole5s.txt","r");
-  //Disfp = fopen("Matrices/SMA_PEAK1/Dissipation5s.txt","r");
 
   EfpMG = fopen("Matrices/SMA_PEAK1/Energy.txt","r");
   MufpMG = fopen("Matrices/SMA_PEAK1/Dipole.txt","r");
   DisfpMG = fopen("Matrices/SMA_PEAK1/Dissipation.txt","r");
 
   // OUTPUT FILES!  MAKE SURE NAMES ARE CONSISTENT
-  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_8s.dat","w");
-  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_8s.dat", "w");
-  popfp = fopen("DATA/SMA_PEAK1/Population_8s.dat","w");
-  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_8s.dat","w");
-  ecumfp = fopen("DATA/SMA_PEAK1/CumulativeEnergyTransfer_8s.dat","w");
-  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_8s.dat","w");
-  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_8s.dat","w");
+  dfp = fopen("DATA/SMA_PEAK1/DipoleMoment_SMAAir_inf.dat","w");
+  dfpMG = fopen("DATA/SMA_PEAK1/DipoleMomentMG_SMAAir_inf.dat", "w");
+  popfp = fopen("DATA/SMA_PEAK1/Population_SMAAir_inf.dat","w");
+  popMGfp = fopen("DATA/SMA_PEAK1/PopulationMG_SMAAir_inf.dat","w");
+  ecumfp = fopen("DATA/SMA_PEAK1/CumulativeEnergyTransfer_SMAAir_inf.dat","w");
+  emsfp = fopen("DATA/SMA_PEAK1/EmissionSpectru_SMAAir_inf.dat","w");
+  absfp = fopen("DATA/SMA_PEAK1/AbsorptionSpectrum_SMAAir_inf.dat","w");
 
 
   printf("  STILL GOOD AFTER MATRICES READS\n");
@@ -451,7 +451,7 @@ int main() {
     double sig_abs_MG = pre_abs * cimag(alphaMG);
 
     // Going to print absorption and scattering cross section in m^2
-    fprintf(absfp, "  %12.10e  %12.10e  %12.10e  %12.10e  %12.10e\n",eev,sig_scat_NP, sig_scat_MG, sig_abs_NP, sig_abs_MG);
+    fprintf(absfp, "  %12.10e  %12.10e  %12.10e  %12.10e  %12.10e %12.10e  %12.10e\n",eev,sig_scat_NP, sig_scat_MG, sig_abs_NP, sig_abs_MG, efr, efi);
     fprintf(emsfp, "  %12.10e  %12.10e  %12.10e  \n",eev, sig_emiss_np, sig_emiss_mg);
   }
   
